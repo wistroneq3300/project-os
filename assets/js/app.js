@@ -201,9 +201,10 @@
     }
     const stage = findStage(activeProj, activeStage);
 
-    // stage tabs
+    // stage tabs (可拖曳排序)
     $('#stage-tabs').innerHTML = p.stages.map(s => `
-      <button class="stbtn ${s.id===activeStage?'active':''}" data-stage="${s.id}">
+      <button class="stbtn ${s.id===activeStage?'active':''}" data-stage="${s.id}" draggable="true">
+        <span class="st-grip" title="拖曳排序">⠿</span>
         <span class="pt-dot" style="background:${s.color}"></span>${esc(s.name)}
         <span class="st-pct">${stageProgress(s)}%</span>
         <span class="st-del" data-delstage="${s.id}" title="刪除階段">×</span>
@@ -216,9 +217,54 @@
         if (st) { p.stages = p.stages.filter(s=>s.id!==el.dataset.delstage); if (activeStage===el.dataset.delstage) activeStage = p.stages[0]?.id||null; saveData(); renderPlanner(); }
       }
     });
+    makeStageTabsDraggable(p);
 
     renderItemTable(p, stage);
     $('#btn-add-item').onclick = () => addItem(p, stage);
+  }
+
+  /* 階段 tab 拖曳排序(用 clientX 找落點,因 tab 是橫排) */
+  function makeStageTabsDraggable(p){
+    const wrap = $('#stage-tabs');
+    let dragged = null;
+    wrap.querySelectorAll('.stbtn[data-stage]').forEach(btn => {
+      btn.addEventListener('dragstart', e => {
+        dragged = btn;
+        btn.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+        try { e.dataTransfer.setData('text/plain', btn.dataset.stage); } catch(err){}
+      });
+      btn.addEventListener('dragend', () => {
+        btn.classList.remove('dragging');
+        dragged = null;
+        // 依目前 DOM 順序改写 p.stages
+        const order = Array.from(wrap.querySelectorAll('.stbtn[data-stage]')).map(b => b.dataset.stage);
+        if (order.length === p.stages.length && order.length) {
+          p.stages.sort((a,b) => order.indexOf(a.id) - order.indexOf(b.id));
+          saveData();
+          // 同步 Gantt / Waterfall 的階段順序
+          renderGantt(); renderWaterfall && renderWaterfall();
+        }
+      });
+    });
+    wrap.ondragover = e => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      if (!dragged) return;
+      const after = getDragAfterX(wrap, e.clientX);
+      if (after == null) wrap.appendChild(dragged);
+      else wrap.insertBefore(dragged, after);
+    };
+    wrap.ondrop = e => { e.preventDefault(); };
+  }
+  function getDragAfterX(container, x){
+    const els = Array.from(container.querySelectorAll('.stbtn[data-stage]:not(.dragging)'));
+    return els.reduce((closest, child) => {
+      const box = child.getBoundingClientRect();
+      const offset = x - box.left - box.width/2;
+      if (offset < 0 && offset > closest.offset) return { offset, element: child };
+      return closest;
+    }, { offset: -Infinity, element: null }).element;
   }
 
   function addStage(){
@@ -229,8 +275,11 @@
     const name = nm.trim() || '階段';
     const colors = ['#ffb224','#60a5fa','#f472b6','#34d399','#a78bfa','#f87171'];
     const st = { id: uid('st'), name, color: colors[p.stages.length%colors.length], items: [] };
-    p.stages.push(st);
-    activeStage = st.id; saveData(); renderPlanner();
+    // 插入到「目前所在階段」之後(你說 EB2 加在中間這種情形)
+    const curIdx = p.stages.findIndex(s => s.id === activeStage);
+    if (curIdx >= 0) p.stages.splice(curIdx + 1, 0, st);
+    else p.stages.push(st);
+    activeStage = st.id; saveData(); renderPlanner(); renderGantt();
   }
 
   function addItem(p, stage){

@@ -25,6 +25,11 @@
 .stbtn.active{background:var(--accent-soft);border-color:rgba(255,178,36,.45)}
 .st-del{font-size:13px;line-height:1;color:var(--text-faint);cursor:pointer;margin-left:2px}
 .st-del:hover{color:var(--bad)}
+.st-grip{cursor:grab;color:var(--text-faint);font-size:13px;line-height:1;letter-spacing:-1px;user-select:none;padding:0 1px}
+.stbtn:hover .st-grip{color:var(--text-dim)}
+.stbtn:focus{outline:none}
+.stage-tabs .stbtn[draggable=true]{cursor:grab}
+.stage-tabs .stbtn.dragging{opacity:.4;cursor:grabbing;border:1px dashed var(--accent);background:transparent}
 
 /* ---------- 測試項目表格 ---------- */
 .planner-head,.item-row{
