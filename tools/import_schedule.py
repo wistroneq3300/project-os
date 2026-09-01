@@ -204,6 +204,18 @@ def main():
         'EB2': '#a78bfa',
         'TS2': '#34d399',
     }
+    # 依任務/群組給出合理的「預設機台數」,讓 Waterfall 首次就有實際數字。
+    # 之後仍可在網頁直接改。
+    def default_equip(group, task, is_ts):
+        g = (group or '').lower()
+        tk = (task or '').lower()
+        # Bring-up 類:通常 2~3 台;Cert/測試類:1~2 台;full qual:3+ 台
+        if 'full qual' in tk or 'qual' in tk:  return 3
+        if 'bring up' in tk or 'bring-up' in tk: return 2
+        if 'cert' in tk or 'test' in tk:        return 2
+        if 'structure' in tk or 'packing' in tk: return 1
+        return 1
+
     stages = []
     for ms in active:
         nm = ms['name']
@@ -219,6 +231,7 @@ def main():
                 end=t['end'].isoformat(),
                 remark='',
                 status=t['status'],
+                equip=default_equip(t['group'], task_name, nm.startswith('TS')),
             ))
         stages.append(dict(
             id=nm.lower(),

@@ -11,11 +11,12 @@
   const $ = s => document.querySelector(s);
   const $$ = s => Array.from(document.querySelectorAll(s));
 
-  const VIEWS = { dashboard: '總覽', planner: '排程規劃', gantt: '甘特圖' };
+  const VIEWS = { dashboard: '總覽', planner: '排程規劃', gantt: '甘特圖', waterfall: '機台瀑布' };
   let currentView = 'dashboard';
   let activeProj = null;    // project id
   let activeStage = null;   // stage id
   let theme = localStorage.getItem('pos-theme') || 'dark';
+  let wfOrient = localStorage.getItem('pos-orient') || 'v';
 
   const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
   const iso = d => d instanceof Date
@@ -233,7 +234,7 @@
   }
 
   function addItem(p, stage){
-    stage.items.push({ id: uid('it'), group:'', task:'新項目', validation:'', start: todayStr(), end: todayStr(), remark:'', status:'todo' });
+    stage.items.push({ id: uid('it'), group:'', task:'新項目', validation:'', start: todayStr(), end: todayStr(), remark:'', status:'todo', equip:0 });
     saveData(); renderPlanner(); renderGantt();
   }
 
@@ -248,6 +249,7 @@
         <input type="date" class="ed-date" data-f="start" value="${it.start}">
         <input type="date" class="ed-date" data-f="end" value="${it.end}">
         <input class="ed-f ed-remark" data-f="remark" value="${esc(it.remark)}" placeholder="Remark">
+        <input type="number" class="ed-f ed-equip" data-f="equip" value="${it.equip||0}" min="0" step="1" title="機台數" placeholder="機台">
         <select class="ed-f ed-status" data-f="status">
           ${['todo','doing','block','done'].map(s=>`<option value="${s}" ${it.status===s?'selected':''}>${STATUS_META[s].label}</option>`).join('')}
         </select>
@@ -271,10 +273,11 @@
       else if (f==='validation') it.validation = v;
       else if (f==='remark') it.remark = v;
       else if (f==='status') it.status = v;
+      else if (f==='equip') it.equip = Math.max(0, parseInt(v)||0);
       else if (f==='start') { if (v && new Date(v) <= new Date(it.end)) it.start = v; }
       else if (f==='end') { if (v && new Date(v) >= new Date(it.start)) it.end = v; }
-      else if (f==='progress') it.progress = Math.min(100,Math.max(0,parseInt(v)||0));
       saveData(); updateTabs(p, stage);
+      if (f==='equip' && currentView!=='waterfall') { /* 只在 waterfall 顯示時再刷 */ }
     };
     $$('#item-list .it-check').forEach(el => el.onclick = () => {
       const it = stage.items.find(x=>x.id===el.dataset.check);
@@ -504,7 +507,61 @@
     if (view==='dashboard') renderDashboard();
     if (view==='planner') renderPlanner();
     if (view==='gantt') renderGantt();
+    if (view==='waterfall') renderWaterfall();
     $('#nav-stage-count').textContent = DATA.reduce((a,p)=>a+p.stages.length,0);
+  }
+
+  /* =====================================================
+     WATERFALL — 機台(設備)資源瀑布
+     每個測試項目需要的機台數,由小堆到大,看總需求。
+  ===================================================== */
+  function renderWaterfall(){
+    const p = findProject(activeProj) || DATA[0];
+    if (!p) { $('#wf-svg').innerHTML = ''; return; }
+    if (!activeProj) activeProj = p.id;
+
+    // stage 分頁
+    $('#wf-stage-tabs').innerHTML = p.stages.map(s => `
+      <button class="stbtn ${s.id===activeStage?'active':''}" data-stage="${s.id}">
+        <span class="st-dot" style="background:${s.color}"></span>${esc(s.name)}<span class="st-count">${s.items.length}</span>
+      </button>`).join('');
+    $$('#wf-stage-tabs .stbtn').forEach(b => b.onclick = () => { activeStage = b.dataset.stage; renderWaterfall(); });
+
+    // legend: 依 group 上色(取前幾個)
+    const stage = ensureStage(p.id, activeStage) || p.stages[0];
+    const groupColors = {};
+    const palette = ['#6ee7b7','#60a5fa','#f472b6','#fbbf24','#a78bfa','#f87171'];
+    stage.items.forEach(it => { if (it.group && !groupColors[it.group]) groupColors[it.group] = palette[Object.keys(groupColors).length % palette.length]; });
+    $('#wf-legend').innerHTML = Object.entries(groupColors).map(([g,c]) => `
+      <span><span class="lg" style="background:${c}"></span>${esc(g)}</span>`).join('')
+      + `<span style="color:#ffb224;font-weight:600">📊 合計</span>`;
+
+    // waterfall 資料: 每個 item 的 equip + 末端合計
+    const data = stage.items.filter(it => (it.equip||0) > 0).map(it => ({
+      label: it.task,
+      value: it.equip,
+      color: groupColors[it.group] || '#5d6b7e',
+    }));
+    data.push({ label: '合計', isTotal: true, color: '#ffb224' });
+
+    if (data.length === 1) {
+      $('#wf-svg').innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-faint)">這個階段還沒有機台配置。回到「排程規劃」填寫「機台」欄。</div>';
+      $('#wf-legend').innerHTML = '';
+    } else {
+      Charts.waterfall($('#wf-svg'), data, { orientation: wfOrient, theme });
+    }
+
+    $$('#wf-orient button').forEach(b => b.classList.toggle('on', b.dataset.orient === wfOrient));
+
+    // summary
+    const total = data.reduce((s,d)=>s+(d.value||0),0);
+    const byGroup = {};
+    stage.items.forEach(it => { if (it.group) byGroup[it.group] = (byGroup[it.group]||0) + (it.equip||0); });
+    $('#wf-summary').innerHTML = `
+      <div class="budget-sum">
+        ${Object.entries(byGroup).map(([g,v]) => `<div class="bs-row"><span>${esc(g)}</span><b>${v} 台</b></div>`).join('') || '<div class="bs-row"><span>未分群組</span><b>0 台</b></div>'}
+        <div class="bs-row total"><span>合計機台</span><b>${total} 台</b></div>
+      </div>`;
   }
 
   $$('.nav-item[data-view]').forEach(b => b.onclick = () => go(b.dataset.view));
@@ -542,6 +599,15 @@
     themeToggle.textContent = theme==='dark'?'☀️':'🌙';
   }
   themeToggle.onclick = () => { theme = theme==='dark'?'light':'dark'; localStorage.setItem('pos-theme',theme); applyTheme(); render(currentView); };
+
+  // waterfall orientation
+  $('#wf-orient').addEventListener('click', e => {
+    const btn = e.target.closest('button[data-orient]');
+    if (!btn) return;
+    wfOrient = btn.dataset.orient;
+    localStorage.setItem('pos-orient', wfOrient);
+    if (currentView === 'waterfall') renderWaterfall();
+  });
 
   // init
   activeProj = DATA[0]?.id || null;

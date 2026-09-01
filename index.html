@@ -40,6 +40,9 @@
       <button class="nav-item" data-view="gantt">
         <span class="nav-ico">⤾</span> 甘特圖
       </button>
+      <button class="nav-item" data-view="waterfall">
+        <span class="nav-ico">≋</span> 機台瀑布
+      </button>
       <div class="nav-section nav-section-spaced">測試進度</div>
       <button class="nav-item"><span class="nav-ico">◉</span> 狀態
         <span class="nav-badge" id="nav-stage-count">0</span></button>
@@ -128,7 +131,7 @@
           <div class="task-table-head planner-head">
             <span></span>
             <span>PCBA / Function</span><span>Task</span><span>Validation</span>
-            <span>Start</span><span>End</span><span>Remark</span><span>狀態</span>
+            <span>Start</span><span>End</span><span>Remark</span><span>機台</span><span>狀態</span>
           </div>
           <div id="item-list"></div>
         </div>
@@ -145,6 +148,34 @@
         </div>
         <div class="stage-tabs compact" id="gantt-stage-tabs"></div>
         <div class="card card-flush" id="gantt-card"></div>
+      </section>
+
+      <!-- ========== WATERFALL (機台資源) ========== -->
+      <section id="view-waterfall" class="view">
+        <div class="hero">
+          <div>
+            <h1 class="page-title">機台資源瀑布</h1>
+            <p class="page-sub">各階段測試項目所需的機台數量堆疊 — 「機台」欄位可在排程規劃中編輯。</p>
+          </div>
+          <div class="legend" id="wf-legend"></div>
+        </div>
+        <div class="stage-tabs compact" id="wf-stage-tabs"></div>
+        <div class="dash-row">
+          <div class="card card-grow">
+            <div class="card-head">
+              <h3>機台分配瀑布</h3>
+              <div class="seg wf-orient" id="wf-orient">
+                <button data-orient="v" class="on"><span class="seg-ico">‖</span> 垂直</button>
+                <button data-orient="h"><span class="seg-ico">≡</span> 水平</button>
+              </div>
+            </div>
+            <div class="wf-container"><svg id="wf-svg"></svg></div>
+          </div>
+          <div class="card">
+            <div class="card-head"><h3>機台摘要</h3></div>
+            <div id="wf-summary"></div>
+          </div>
+        </div>
       </section>
     </div>
   </main>

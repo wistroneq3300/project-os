@@ -30,7 +30,8 @@ const PROJECTS = [
             "start": "2026-09-06",
             "end": "2026-09-06",
             "remark": "",
-            "status": "done"
+            "status": "done",
+            "equip": 2
           },
           {
             "id": "eb1-2",
@@ -40,7 +41,8 @@ const PROJECTS = [
             "start": "2026-08-31",
             "end": "2026-09-04",
             "remark": "",
-            "status": "todo"
+            "status": "todo",
+            "equip": 2
           },
           {
             "id": "eb1-3",
@@ -50,7 +52,8 @@ const PROJECTS = [
             "start": "2026-09-10",
             "end": "2026-09-10",
             "remark": "",
-            "status": "doing"
+            "status": "doing",
+            "equip": 2
           },
           {
             "id": "eb1-4",
@@ -60,7 +63,8 @@ const PROJECTS = [
             "start": "2026-08-31",
             "end": "2026-09-04",
             "remark": "",
-            "status": "doing"
+            "status": "doing",
+            "equip": 3
           },
           {
             "id": "eb1-5",
@@ -70,7 +74,8 @@ const PROJECTS = [
             "start": "2026-09-06",
             "end": "2026-09-06",
             "remark": "",
-            "status": "done"
+            "status": "done",
+            "equip": 2
           },
           {
             "id": "eb1-6",
@@ -80,7 +85,8 @@ const PROJECTS = [
             "start": "2026-09-08",
             "end": "2026-09-12",
             "remark": "",
-            "status": "todo"
+            "status": "todo",
+            "equip": 2
           },
           {
             "id": "eb1-7",
@@ -90,7 +96,8 @@ const PROJECTS = [
             "start": "2026-09-08",
             "end": "2026-09-12",
             "remark": "",
-            "status": "doing"
+            "status": "doing",
+            "equip": 3
           },
           {
             "id": "eb1-8",
@@ -100,7 +107,8 @@ const PROJECTS = [
             "start": "2026-09-16",
             "end": "2026-09-20",
             "remark": "",
-            "status": "done"
+            "status": "done",
+            "equip": 2
           },
           {
             "id": "eb1-9",
@@ -110,7 +118,8 @@ const PROJECTS = [
             "start": "2026-09-16",
             "end": "2026-09-20",
             "remark": "",
-            "status": "todo"
+            "status": "todo",
+            "equip": 2
           },
           {
             "id": "eb1-10",
@@ -120,7 +129,8 @@ const PROJECTS = [
             "start": "2026-09-16",
             "end": "2026-09-20",
             "remark": "",
-            "status": "doing"
+            "status": "doing",
+            "equip": 2
           },
           {
             "id": "eb1-11",
@@ -130,7 +140,8 @@ const PROJECTS = [
             "start": "2026-09-16",
             "end": "2026-09-20",
             "remark": "",
-            "status": "doing"
+            "status": "doing",
+            "equip": 2
           },
           {
             "id": "eb1-12",
@@ -140,7 +151,8 @@ const PROJECTS = [
             "start": "2026-09-20",
             "end": "2026-09-24",
             "remark": "",
-            "status": "done"
+            "status": "done",
+            "equip": 2
           },
           {
             "id": "eb1-13",
@@ -150,7 +162,8 @@ const PROJECTS = [
             "start": "2026-09-23",
             "end": "2026-09-27",
             "remark": "",
-            "status": "todo"
+            "status": "todo",
+            "equip": 2
           },
           {
             "id": "eb1-14",
@@ -160,7 +173,8 @@ const PROJECTS = [
             "start": "2026-09-24",
             "end": "2026-09-28",
             "remark": "",
-            "status": "doing"
+            "status": "doing",
+            "equip": 2
           },
           {
             "id": "eb1-15",
@@ -170,7 +184,8 @@ const PROJECTS = [
             "start": "2026-09-24",
             "end": "2026-09-28",
             "remark": "",
-            "status": "done"
+            "status": "done",
+            "equip": 2
           },
           {
             "id": "eb1-16",
@@ -180,7 +195,8 @@ const PROJECTS = [
             "start": "2026-09-24",
             "end": "2026-09-28",
             "remark": "",
-            "status": "todo"
+            "status": "todo",
+            "equip": 2
           },
           {
             "id": "eb1-17",
@@ -190,7 +206,8 @@ const PROJECTS = [
             "start": "2026-09-24",
             "end": "2026-09-28",
             "remark": "",
-            "status": "doing"
+            "status": "doing",
+            "equip": 2
           },
           {
             "id": "eb1-18",
@@ -200,7 +217,8 @@ const PROJECTS = [
             "start": "2026-09-24",
             "end": "2026-09-28",
             "remark": "",
-            "status": "doing"
+            "status": "doing",
+            "equip": 3
           },
           {
             "id": "eb1-19",
@@ -210,7 +228,8 @@ const PROJECTS = [
             "start": "2026-10-02",
             "end": "2026-10-06",
             "remark": "",
-            "status": "doing"
+            "status": "doing",
+            "equip": 2
           },
           {
             "id": "eb1-20",
@@ -220,7 +239,8 @@ const PROJECTS = [
             "start": "2026-10-02",
             "end": "2026-10-06",
             "remark": "",
-            "status": "doing"
+            "status": "doing",
+            "equip": 2
           }
         ]
       },
@@ -237,7 +257,8 @@ const PROJECTS = [
             "start": "2026-09-06",
             "end": "2026-10-06",
             "remark": "",
-            "status": "todo"
+            "status": "todo",
+            "equip": 2
           },
           {
             "id": "ts1-2",
@@ -247,7 +268,8 @@ const PROJECTS = [
             "start": "2026-09-06",
             "end": "2026-10-24",
             "remark": "",
-            "status": "todo"
+            "status": "todo",
+            "equip": 1
           },
           {
             "id": "ts1-3",
@@ -257,7 +279,8 @@ const PROJECTS = [
             "start": "2026-09-06",
             "end": "2026-09-19",
             "remark": "",
-            "status": "todo"
+            "status": "todo",
+            "equip": 1
           },
           {
             "id": "ts1-4",
@@ -267,7 +290,8 @@ const PROJECTS = [
             "start": "2026-09-14",
             "end": "2026-09-18",
             "remark": "",
-            "status": "todo"
+            "status": "todo",
+            "equip": 1
           },
           {
             "id": "ts1-5",
@@ -277,7 +301,8 @@ const PROJECTS = [
             "start": "2026-09-14",
             "end": "2026-09-18",
             "remark": "",
-            "status": "doing"
+            "status": "doing",
+            "equip": 2
           },
           {
             "id": "ts1-6",
@@ -287,7 +312,8 @@ const PROJECTS = [
             "start": "2026-09-22",
             "end": "2026-09-26",
             "remark": "",
-            "status": "todo"
+            "status": "todo",
+            "equip": 1
           },
           {
             "id": "ts1-7",
@@ -297,7 +323,8 @@ const PROJECTS = [
             "start": "2026-09-22",
             "end": "2026-09-26",
             "remark": "",
-            "status": "doing"
+            "status": "doing",
+            "equip": 2
           }
         ]
       },
@@ -314,7 +341,8 @@ const PROJECTS = [
             "start": "2026-10-10",
             "end": "2026-10-14",
             "remark": "",
-            "status": "todo"
+            "status": "todo",
+            "equip": 2
           },
           {
             "id": "ts2-2",
@@ -324,7 +352,8 @@ const PROJECTS = [
             "start": "2026-10-10",
             "end": "2026-10-14",
             "remark": "",
-            "status": "todo"
+            "status": "todo",
+            "equip": 1
           },
           {
             "id": "ts2-3",
@@ -334,7 +363,8 @@ const PROJECTS = [
             "start": "2026-10-18",
             "end": "2026-10-22",
             "remark": "",
-            "status": "todo"
+            "status": "todo",
+            "equip": 1
           },
           {
             "id": "ts2-4",
@@ -344,7 +374,8 @@ const PROJECTS = [
             "start": "2026-10-18",
             "end": "2026-10-22",
             "remark": "",
-            "status": "doing"
+            "status": "doing",
+            "equip": 2
           },
           {
             "id": "ts2-5",
@@ -354,7 +385,8 @@ const PROJECTS = [
             "start": "2026-10-26",
             "end": "2026-10-30",
             "remark": "",
-            "status": "todo"
+            "status": "todo",
+            "equip": 1
           },
           {
             "id": "ts2-6",
@@ -364,7 +396,8 @@ const PROJECTS = [
             "start": "2026-10-26",
             "end": "2026-10-30",
             "remark": "",
-            "status": "doing"
+            "status": "doing",
+            "equip": 2
           }
         ]
       }
