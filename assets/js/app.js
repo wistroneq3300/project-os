@@ -411,7 +411,8 @@
     }
 
     const xFor = date => Math.max(0, Math.min(daySpan(minD, date)*dayW, gridW));
-    const wFor = it => Math.max(daySpan(it.start, it.end)*dayW, 6);
+    const minBarW = 72;   // 最小橫條寬(讓短任務也能撐開,填滿右側空間)
+    const wFor = it => Math.max(daySpan(it.start, it.end)*dayW, minBarW);
 
     const LABELW = 250;
     const ROWH = 38, HEADH = 46, PAD = 6, BARH = 22;
@@ -445,7 +446,6 @@
         const w = wFor(it);
         const isMilestone = daySpan(it.start,it.end)===0;
         const color = STATUS_META[it.status]?.color || '#5d6b7e';
-        const showText = w >= 80;
         rows += `<div class="gantt-row" data-item="${it.id}">
           <div class="gantt-label-cell">
             <span class="pb-dot" style="background:${color}"></span>
@@ -460,7 +460,6 @@
                    style="left:${left}px;width:${w}px;background:${color}"
                    title="${esc(it.task)} · ${fmt(it.start)} → ${fmt(it.end)}">
                   <span class="g-resize g-resize-l" data-r="l"></span>
-                  ${showText ? `<span class="g-bar-text">${esc(it.task)}</span>` : ''}
                   <span class="g-resize g-resize-r" data-r="r"></span>
                 </div>`}
           </div>
@@ -489,7 +488,7 @@
 
   function wireGanttDrag(p, stage, gridW, dayW, xFor, minD){
     const get = id => stage.items.find(it => it.id === id);
-    const minW = 6;
+    const minW = 72;   // 與 renderGantt 的最小橫條寬一致
     const setBar = (bar, left, w) => { bar.style.left = left+'px'; bar.style.width = w+'px'; };
 
     $$('#gantt-scroll .g-bar').forEach(bar => {
