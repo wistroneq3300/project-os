@@ -23,6 +23,25 @@ python3 -m http.server 8090
 | **甘特圖** | Timeline view + Dependency | 時間軸任務色條 + 任務相依性箭頭 + 月份格線 + 里程碑 |
 | **預算 Waterfall** | 成本分析 widget | 預算 → 已投入 → 剩餘 的增減拆解,附預算摘要 |
 
+## 資料來源(匯入)
+
+`assets/js/data.js` 目前由 **`Daily Schedule.xlsx`**(硬體 Bring-up 排程表)匯入產生:
+
+- 時間軸:2026-08-31 ~ 2026-11-27(89 天)
+- 3 個里程碑當作 3 個「專案」:**EB1 工程驗證**、**TS1 機種測試**、**TS2 機種測試**
+- 任務保留原 Excel 的群組(如 `Baseboard · Early Bring up in factory`)、開始/結束日期、狀態與進度
+- EB2 區塊在 Excel 中無任務,故略過不顯示
+
+更換或更新資料後,重新產生:
+
+```bash
+cd /root/sheng/monday
+python3 tools/import_schedule.py   # 讀取 Daily Schedule.xlsx → 覆寫 assets/js/data.js
+```
+
+> 若想改回原本的「5 個示範專案」,請還原 `assets/js/data.js`。
+> 未來也可接到 monday.com GraphQL API(看板 Boards / 任務 Items)直接取數。
+
 ## 資料怎麼換成你自己的
 
 所有假資料都集中在 **`assets/js/data.js`**,是一個結構清楚的常數 `PROJECTS`。

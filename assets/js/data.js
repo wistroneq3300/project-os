@@ -1,7 +1,7 @@
 /* ============================================================
-   ProjectOS — mock data (single source of truth).
-   In real use, replace with: monday API GraphQL, CSV import,
-   or a backend endpoint.
+   ProjectOS — 資料來源:Daily Schedule.xlsx(硬體 Bring-up 排程)
+   由 tools/import_schedule.py 自動產生,請勿手動編輯。
+   手動改資料請重跑:python3 tools/import_schedule.py
    ============================================================ */
 
 const STATUS_META = {
@@ -19,109 +19,515 @@ const OWNERS = {
   tom:  { name: 'Tom',   color: '#a78bfa' },
 };
 
-// helper: build ISO date from y,m,d
-const D = (y,m,d) => `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-const daySpan = (a,b) => Math.round((new Date(b)-new Date(a))/86400000);
-
-const PROJECTS = [
+const PROJECTS = 
+[
   {
-    id: 'web',
-    name: '官網改版',
-    color: '#ffb224',
-    status: 'doing',
-    budget: 480000,
-    spent: 312000,
-    manager: 'alan',
-    tasks: [
-      { id:'w1', name:'需求訪談與競品分析', status:'done',  owner:'alan', start:D(2026,7,1),  end:D(2026,7,14),  progress:100 },
-      { id:'w2', name:'資訊架構與線框圖',   status:'done',  owner:'may',  start:D(2026,7,15), end:D(2026,7,31),  progress:100 },
-      { id:'w3', name:'視覺設計(首頁/內頁)', status:'doing', owner:'may',  start:D(2026,8,1),  end:D(2026,8,21),  progress:55 },
-      { id:'w4', name:'前端開發與 RWD',     status:'doing', owner:'john', start:D(2026,8,15), end:D(2026,9,12),  progress:30 },
-      { id:'w5', name:'CMS 串接與測試',     status:'todo',  owner:'tom',  start:D(2026,9,1),  end:D(2026,9,18),  progress:0 },
-      { id:'w6', name:'上線部署與驗收',     status:'todo',  owner:'alan', start:D(2026,9,19), end:D(2026,9,30),  progress:0 },
+    "id": "eb1",
+    "name": "EB1 工程驗證",
+    "color": "#ffb224",
+    "status": "doing",
+    "budget": 3600000,
+    "spent": 1512000,
+    "manager": "alan",
+    "source_milestone": "EB1",
+    "tasks": [
+      {
+        "id": "eb1-1",
+        "name": "Baseboard · Early Bring up in factory",
+        "grp": "Baseboard",
+        "status": "done",
+        "owner": "alan",
+        "start": "2026-09-06",
+        "end": "2026-09-06",
+        "progress": 100
+      },
+      {
+        "id": "eb1-2",
+        "name": "Baseboard · Phase1 w/o Module Bring up in LAB",
+        "grp": "Baseboard",
+        "status": "todo",
+        "owner": "may",
+        "start": "2026-08-31",
+        "end": "2026-09-04",
+        "progress": 0
+      },
+      {
+        "id": "eb1-3",
+        "name": "Baseboard · Bring up in SC",
+        "grp": "Baseboard",
+        "status": "doing",
+        "owner": "john",
+        "start": "2026-09-10",
+        "end": "2026-09-10",
+        "progress": 30
+      },
+      {
+        "id": "eb1-4",
+        "name": "Baseboard · EB1 full qual",
+        "grp": "Baseboard",
+        "status": "doing",
+        "owner": "soph",
+        "start": "2026-08-31",
+        "end": "2026-09-04",
+        "progress": 30
+      },
+      {
+        "id": "eb1-5",
+        "name": "BayC board · Early Bring up in factory",
+        "grp": "BayC board",
+        "status": "done",
+        "owner": "tom",
+        "start": "2026-09-06",
+        "end": "2026-09-06",
+        "progress": 100
+      },
+      {
+        "id": "eb1-6",
+        "name": "BayC board · Bring up in LAB",
+        "grp": "BayC board",
+        "status": "todo",
+        "owner": "alan",
+        "start": "2026-09-08",
+        "end": "2026-09-12",
+        "progress": 0
+      },
+      {
+        "id": "eb1-7",
+        "name": "BayC board · EB1 full qual",
+        "grp": "BayC board",
+        "status": "doing",
+        "owner": "may",
+        "start": "2026-09-08",
+        "end": "2026-09-12",
+        "progress": 30
+      },
+      {
+        "id": "eb1-8",
+        "name": "Tester · Early w/o module Bring up in factory",
+        "grp": "Tester",
+        "status": "done",
+        "owner": "john",
+        "start": "2026-09-16",
+        "end": "2026-09-20",
+        "progress": 100
+      },
+      {
+        "id": "eb1-9",
+        "name": "Tester · Bring up in LAB",
+        "grp": "Tester",
+        "status": "todo",
+        "owner": "soph",
+        "start": "2026-09-16",
+        "end": "2026-09-20",
+        "progress": 0
+      },
+      {
+        "id": "eb1-10",
+        "name": "Tester · Bring up in SC",
+        "grp": "Tester",
+        "status": "doing",
+        "owner": "tom",
+        "start": "2026-09-16",
+        "end": "2026-09-20",
+        "progress": 30
+      },
+      {
+        "id": "eb1-11",
+        "name": "Tester · w/ module Bring up in SC",
+        "grp": "Tester",
+        "status": "doing",
+        "owner": "alan",
+        "start": "2026-09-16",
+        "end": "2026-09-20",
+        "progress": 30
+      },
+      {
+        "id": "eb1-12",
+        "name": "CPU module · Early LB bring up in factory",
+        "grp": "CPU module",
+        "status": "done",
+        "owner": "may",
+        "start": "2026-09-20",
+        "end": "2026-09-24",
+        "progress": 100
+      },
+      {
+        "id": "eb1-13",
+        "name": "CPU module · Bring up in LAB",
+        "grp": "CPU module",
+        "status": "todo",
+        "owner": "john",
+        "start": "2026-09-23",
+        "end": "2026-09-27",
+        "progress": 0
+      },
+      {
+        "id": "eb1-14",
+        "name": "CPU module · Bring up in SC",
+        "grp": "CPU module",
+        "status": "doing",
+        "owner": "soph",
+        "start": "2026-09-24",
+        "end": "2026-09-28",
+        "progress": 30
+      },
+      {
+        "id": "eb1-15",
+        "name": "CPU module · Early Chip bring up in factory",
+        "grp": "CPU module",
+        "status": "done",
+        "owner": "tom",
+        "start": "2026-09-24",
+        "end": "2026-09-28",
+        "progress": 100
+      },
+      {
+        "id": "eb1-16",
+        "name": "CPU module · Bring up in LAB",
+        "grp": "CPU module",
+        "status": "todo",
+        "owner": "alan",
+        "start": "2026-09-24",
+        "end": "2026-09-28",
+        "progress": 0
+      },
+      {
+        "id": "eb1-17",
+        "name": "CPU module · Bring up in SC",
+        "grp": "CPU module",
+        "status": "doing",
+        "owner": "may",
+        "start": "2026-09-24",
+        "end": "2026-09-28",
+        "progress": 30
+      },
+      {
+        "id": "eb1-18",
+        "name": "CPU module · EB1 full qual",
+        "grp": "CPU module",
+        "status": "doing",
+        "owner": "john",
+        "start": "2026-09-24",
+        "end": "2026-09-28",
+        "progress": 30
+      },
+      {
+        "id": "eb1-19",
+        "name": "L10 · Phase1 w/o Module Bring up in SC",
+        "grp": "L10",
+        "status": "doing",
+        "owner": "soph",
+        "start": "2026-10-02",
+        "end": "2026-10-06",
+        "progress": 30
+      },
+      {
+        "id": "eb1-20",
+        "name": "L10 · Phase2 w/ Module Bring up in SC",
+        "grp": "L10",
+        "status": "doing",
+        "owner": "tom",
+        "start": "2026-10-02",
+        "end": "2026-10-06",
+        "progress": 30
+      }
     ],
-    deps: [ ['w1','w2'],['w2','w3'],['w3','w4'],['w4','w5'],['w5','w6'] ],
+    "deps": [
+      [
+        "eb1-1",
+        "eb1-1"
+      ],
+      [
+        "eb1-2",
+        "eb1-2"
+      ],
+      [
+        "eb1-3",
+        "eb1-3"
+      ],
+      [
+        "eb1-4",
+        "eb1-4"
+      ],
+      [
+        "eb1-5",
+        "eb1-5"
+      ],
+      [
+        "eb1-6",
+        "eb1-6"
+      ],
+      [
+        "eb1-7",
+        "eb1-7"
+      ],
+      [
+        "eb1-8",
+        "eb1-8"
+      ],
+      [
+        "eb1-9",
+        "eb1-9"
+      ],
+      [
+        "eb1-10",
+        "eb1-10"
+      ],
+      [
+        "eb1-11",
+        "eb1-11"
+      ],
+      [
+        "eb1-12",
+        "eb1-12"
+      ],
+      [
+        "eb1-13",
+        "eb1-13"
+      ],
+      [
+        "eb1-14",
+        "eb1-14"
+      ],
+      [
+        "eb1-15",
+        "eb1-15"
+      ],
+      [
+        "eb1-16",
+        "eb1-16"
+      ],
+      [
+        "eb1-17",
+        "eb1-17"
+      ],
+      [
+        "eb1-18",
+        "eb1-18"
+      ],
+      [
+        "eb1-19",
+        "eb1-19"
+      ],
+      [
+        "eb1-20",
+        "eb1-20"
+      ]
+    ]
   },
   {
-    id: 'app',
-    name: '會員 App',
-    color: '#60a5fa',
-    status: 'doing',
-    budget: 650000,
-    spent: 208000,
-    manager: 'john',
-    tasks: [
-      { id:'a1', name:'需求定義與功能清單',   status:'done',  owner:'alan', start:D(2026,7,10), end:D(2026,7,24),  progress:100 },
-      { id:'a2', name:'UI/UX 流程設計',       status:'done',  owner:'soph', start:D(2026,7,25), end:D(2026,8,14),  progress:100 },
-      { id:'a3', name:'後端 API 開發',        status:'doing', owner:'tom',  start:D(2026,8,10), end:D(2026,9,5),   progress:40 },
-      { id:'a4', name:'App 開發(iOS/Android)',status:'doing', owner:'john', start:D(2026,8,20), end:D(2026,9,25),  progress:15 },
-      { id:'a5', name:'測試與商店上架',       status:'todo',  owner:'may',  start:D(2026,9,26), end:D(2026,10,10), progress:0 },
+    "id": "ts1",
+    "name": "TS1 機種測試",
+    "color": "#60a5fa",
+    "status": "doing",
+    "budget": 1820000,
+    "spent": 764400,
+    "manager": "soph",
+    "source_milestone": "TS1",
+    "tasks": [
+      {
+        "id": "ts1-1",
+        "name": "Reliability · Structure test",
+        "grp": "Reliability",
+        "status": "todo",
+        "owner": "may",
+        "start": "2026-09-06",
+        "end": "2026-10-06",
+        "progress": 0
+      },
+      {
+        "id": "ts1-2",
+        "name": "Reliability · Reliability",
+        "grp": "Reliability",
+        "status": "todo",
+        "owner": "john",
+        "start": "2026-09-06",
+        "end": "2026-10-24",
+        "progress": 0
+      },
+      {
+        "id": "ts1-3",
+        "name": "Reliability · Packing",
+        "grp": "Reliability",
+        "status": "todo",
+        "owner": "soph",
+        "start": "2026-09-06",
+        "end": "2026-09-19",
+        "progress": 0
+      },
+      {
+        "id": "ts1-4",
+        "name": "EMC · Validation",
+        "grp": "EMC",
+        "status": "todo",
+        "owner": "tom",
+        "start": "2026-09-14",
+        "end": "2026-09-18",
+        "progress": 0
+      },
+      {
+        "id": "ts1-5",
+        "name": "EMC · Cert",
+        "grp": "EMC",
+        "status": "doing",
+        "owner": "alan",
+        "start": "2026-09-14",
+        "end": "2026-09-18",
+        "progress": 30
+      },
+      {
+        "id": "ts1-6",
+        "name": "Safety · Validation",
+        "grp": "Safety",
+        "status": "todo",
+        "owner": "may",
+        "start": "2026-09-22",
+        "end": "2026-09-26",
+        "progress": 0
+      },
+      {
+        "id": "ts1-7",
+        "name": "Safety · Cert",
+        "grp": "Safety",
+        "status": "doing",
+        "owner": "john",
+        "start": "2026-09-22",
+        "end": "2026-09-26",
+        "progress": 30
+      }
     ],
-    deps: [ ['a1','a2'],['a2','a3'],['a2','a4'],['a3','a5'],['a4','a5'] ],
+    "deps": [
+      [
+        "ts1-1",
+        "ts1-1"
+      ],
+      [
+        "ts1-2",
+        "ts1-2"
+      ],
+      [
+        "ts1-3",
+        "ts1-3"
+      ],
+      [
+        "ts1-4",
+        "ts1-4"
+      ],
+      [
+        "ts1-5",
+        "ts1-5"
+      ],
+      [
+        "ts1-6",
+        "ts1-6"
+      ],
+      [
+        "ts1-7",
+        "ts1-7"
+      ]
+    ]
   },
   {
-    id: 'mkt',
-    name: 'Q3 行銷活動',
-    color: '#f472b6',
-    status: 'doing',
-    budget: 380000,
-    spent: 145000,
-    manager: 'soph',
-    tasks: [
-      { id:'m1', name:'活動策略與預算分配',   status:'done',  owner:'soph', start:D(2026,7,1),  end:D(2026,7,10),  progress:100 },
-      { id:'m2', name:'素材製作(圖/影片)',    status:'done',  owner:'may',  start:D(2026,7,11), end:D(2026,7,30),  progress:100 },
-      { id:'m3', name:'廣告投放與測試',       status:'doing', owner:'soph', start:D(2026,8,1),  end:D(2026,8,25),  progress:62 },
-      { id:'m4', name:'社群媒體曝光',         status:'todo',  owner:'may',  start:D(2026,8,20), end:D(2026,9,10),  progress:0 },
-      { id:'m5', name:'成效結算與優化',       status:'todo',  owner:'alan', start:D(2026,9,11), end:D(2026,9,20),  progress:0 },
+    "id": "ts2",
+    "name": "TS2 機種測試",
+    "color": "#34d399",
+    "status": "doing",
+    "budget": 1560000,
+    "spent": 655200,
+    "manager": "alan",
+    "source_milestone": "TS2",
+    "tasks": [
+      {
+        "id": "ts2-1",
+        "name": "Reliability · Structure test",
+        "grp": "Reliability",
+        "status": "todo",
+        "owner": "tom",
+        "start": "2026-10-10",
+        "end": "2026-10-14",
+        "progress": 0
+      },
+      {
+        "id": "ts2-2",
+        "name": "Reliability · Reliability",
+        "grp": "Reliability",
+        "status": "todo",
+        "owner": "alan",
+        "start": "2026-10-10",
+        "end": "2026-10-14",
+        "progress": 0
+      },
+      {
+        "id": "ts2-3",
+        "name": "EMC · Validation",
+        "grp": "EMC",
+        "status": "todo",
+        "owner": "may",
+        "start": "2026-10-18",
+        "end": "2026-10-22",
+        "progress": 0
+      },
+      {
+        "id": "ts2-4",
+        "name": "EMC · Cert",
+        "grp": "EMC",
+        "status": "doing",
+        "owner": "john",
+        "start": "2026-10-18",
+        "end": "2026-10-22",
+        "progress": 30
+      },
+      {
+        "id": "ts2-5",
+        "name": "Safety · Validation",
+        "grp": "Safety",
+        "status": "todo",
+        "owner": "soph",
+        "start": "2026-10-26",
+        "end": "2026-10-30",
+        "progress": 0
+      },
+      {
+        "id": "ts2-6",
+        "name": "Safety · Cert",
+        "grp": "Safety",
+        "status": "doing",
+        "owner": "tom",
+        "start": "2026-10-26",
+        "end": "2026-10-30",
+        "progress": 30
+      }
     ],
-    deps: [ ['m1','m2'],['m1','m3'],['m2','m4'],['m3','m5'],['m4','m5'] ],
-  },
-  {
-    id: 'sys',
-    name: '內部系統升級',
-    color: '#34d399',
-    status: 'block',
-    budget: 720000,
-    spent: 540000,
-    manager: 'tom',
-    tasks: [
-      { id:'s1', name:'現況盤點與需求訪談',   status:'done',  owner:'tom',  start:D(2026,7,1),  end:D(2026,7,20),  progress:100 },
-      { id:'s2', name:'系統架構設計',         status:'done',  owner:'tom',  start:D(2026,7,21), end:D(2026,8,9),   progress:100 },
-      { id:'s3', name:'資料庫遷移',           status:'block', owner:'john', start:D(2026,8,10), end:D(2026,8,28),  progress:45 },
-      { id:'s4', name:'核心模組開發',         status:'todo',  owner:'tom',  start:D(2026,8,29), end:D(2026,10,2),  progress:0 },
-      { id:'s5', name:'切換與教育訓練',       status:'todo',  owner:'alan', start:D(2026,10,3), end:D(2026,10,15), progress:0 },
-    ],
-    deps: [ ['s1','s2'],['s2','s3'],['s3','s4'],['s4','s5'] ],
-  },
-  {
-    id: 'evt',
-    name: '年度客戶年會',
-    color: '#a78bfa',
-    status: 'todo',
-    budget: 260000,
-    spent: 38000,
-    manager: 'may',
-    tasks: [
-      { id:'e1', name:'主題與流程規劃',       status:'done',  owner:'may',  start:D(2026,8,1),  end:D(2026,8,15),  progress:100 },
-      { id:'e2', name:'場地與廠商接洽',       status:'doing', owner:'soph', start:D(2026,8,10), end:D(2026,8,24),  progress:35 },
-      { id:'e3', name:'邀請名單與報名系統',   status:'todo',  owner:'alan', start:D(2026,8,25), end:D(2026,9,10),  progress:0 },
-      { id:'e4', name:'現場執行與主持',       status:'todo',  owner:'may',  start:D(2026,11,1), end:D(2026,11,3),   progress:0 },
-      { id:'e5', name:'會後回饋與結案',       status:'todo',  owner:'soph', start:D(2026,11,4), end:D(2026,11,8),   progress:0 },
-    ],
-    deps: [ ['e1','e2'],['e1','e3'],['e2','e4'],['e3','e4'],['e4','e5'] ],
-  },
+    "deps": [
+      [
+        "ts2-1",
+        "ts2-1"
+      ],
+      [
+        "ts2-2",
+        "ts2-2"
+      ],
+      [
+        "ts2-3",
+        "ts2-3"
+      ],
+      [
+        "ts2-4",
+        "ts2-4"
+      ],
+      [
+        "ts2-5",
+        "ts2-5"
+      ],
+      [
+        "ts2-6",
+        "ts2-6"
+      ]
+    ]
+  }
 ];
 
-// ---- derived helpers (kept here for any consumer) ----
 const projById = id => PROJECTS.find(p => p.id === id);
-const taskById = id => {
-  for (const p of PROJECTS) {
-    const t = p.tasks.find(t => t.id === id);
-    if (t) return t;
-  }
-  return null;
-};
-function projProgress(p){
-  if (!p.tasks.length) return 0;
-  return Math.round(p.tasks.reduce((s,t)=>s+t.progress,0)/p.tasks.length);
-}
+const taskById = id => { for (const p of PROJECTS) { const t = p.tasks.find(t => t.id === id); if (t) return t; } return null; };
+function projProgress(p){ if (!p.tasks.length) return 0; return Math.round(p.tasks.reduce((s,t)=>s+t.progress,0)/p.tasks.length); }
+const daySpan = (a,b) => Math.round((new Date(b)-new Date(a))/86400000);
