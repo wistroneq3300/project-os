@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ProjectOS — 專案管理工作台</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/styles.css" />
+</head>
+<body>
+<div class="app">
+
+  <!-- ===== Sidebar ===== -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">◈</div>
+      <div class="brand-name">Project<span>OS</span></div>
+    </div>
+
+    <div class="workspace">
+      <span class="ws-label">工作區</span>
+      <button class="ws-btn">
+        <img class="ws-avatar" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'><rect width='40' height='40' rx='10' fill='%23ffb224'/><text x='20' y='27' font-size='18' font-family='sans-serif' font-weight='700' text-anchor='middle' fill='%230f1115'>A</text></svg>" alt="" />
+        <span class="ws-name">Alan 的團隊</span>
+        <span class="ws-caret">⌄</span>
+      </button>
+    </div>
+
+    <nav class="nav">
+      <div class="nav-section">工作台</div>
+      <button class="nav-item active" data-view="dashboard">
+        <span class="nav-ico">▤</span> 總覽
+      </button>
+      <button class="nav-item" data-view="tasks">
+        <span class="nav-ico">▦</span> 專案 & 任務
+      </button>
+      <button class="nav-item" data-view="gantt">
+        <span class="nav-ico">⤾</span> 甘特圖
+      </button>
+      <button class="nav-item" data-view="waterfall">
+        <span class="nav-ico">≋</span> 預算 Waterfall
+      </button>
+
+      <div class="nav-section nav-section-spaced">團隊</div>
+      <button class="nav-item"><span class="nav-ico">◉</span> 成員
+        <span class="nav-badge">6</span></button>
+      <button class="nav-item"><span class="nav-ico">✉</span> 通知
+        <span class="nav-badge nav-badge-hot">3</span></button>
+    </nav>
+
+    <div class="sidebar-foot">
+      <div class="user">
+        <div class="user-avatar">AL</div>
+        <div>
+          <div class="user-name">Alan</div>
+          <div class="user-role">專案經理</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ===== Main ===== -->
+  <main class="main">
+    <header class="topbar">
+      <button class="hamburger" id="hamburger">≡</button>
+      <div class="crumb">
+        <span class="crumb-muted">工作區 /</span>
+        <span id="view-title">專案總覽</span>
+      </div>
+      <div class="top-actions">
+        <button class="btn btn-ghost" id="btn-demo">↻ 範例資料</button>
+        <button class="btn btn-primary" id="btn-add">＋ 新增專案</button>
+      </div>
+    </header>
+
+    <div class="content">
+      <section id="view-dashboard" class="view active">
+        <div class="hero">
+          <div>
+            <h1 class="page-title" id="dash-title">早安, Alan 👋</h1>
+            <p class="page-sub">這是你手上 5 個專案目前的健康狀況。點任一卡片進入細節。</p>
+          </div>
+          <div class="hero-side" id="today-line"></div>
+        </div>
+
+        <div class="metric-grid" id="metric-grid"></div>
+        <div class="dash-row">
+          <div class="card card-grow">
+            <div class="card-head">
+              <h3>各專案進度</h3>
+              <span class="card-hint">依完成度排序</span>
+            </div>
+            <div id="proj-bars"></div>
+          </div>
+          <div class="card">
+            <div class="card-head">
+              <h3>狀態分布</h3>
+            </div>
+            <div id="status-ring"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <h3>最近任務</h3>
+            <span class="card-hint">待你處理</span>
+          </div>
+          <div id="recent-tasks"></div>
+        </div>
+      </section>
+
+      <section id="view-tasks" class="view">
+        <div class="hero">
+          <div>
+            <h1 class="page-title">專案與任務</h1>
+            <p class="page-sub">切換專案、勾選進度、指派負責人。</p>
+          </div>
+        </div>
+        <div class="proj-tabs" id="proj-tabs"></div>
+        <div class="card">
+          <div class="card-head">
+            <h3 id="proj-detail-title">─</h3>
+            <div class="proj-meta" id="proj-meta"></div>
+          </div>
+          <div class="progress-track"><div class="progress-fill" id="proj-detail-progress"></div></div>
+          <div class="task-table-head">
+            <span>任務</span><span>狀態</span><span>負責人</span><span>期間</span><span class="align-r">進度</span>
+          </div>
+          <div id="task-list"></div>
+        </div>
+      </section>
+
+      <section id="view-gantt" class="view">
+        <div class="hero">
+          <div>
+            <h1 class="page-title">甘特圖</h1>
+            <p class="page-sub">任務時間軸與相依性 — 對應 monday 的 Timeline + Dependency 視圖。</p>
+          </div>
+          <div class="legend" id="gantt-legend"></div>
+        </div>
+        <div class="card card-flush" id="gantt-card"></div>
+      </section>
+
+      <section id="view-waterfall" class="view">
+        <div class="hero">
+          <div>
+            <h1 class="page-title">預算 Waterfall</h1>
+            <p class="page-sub">各專案的預算增減拆解,最後落點看總支出 — 對應 monday 的成本分析。</p>
+          </div>
+        </div>
+        <div class="dash-row">
+          <div class="card card-grow" id="waterfall-card"><div class="wf-container"><svg></svg></div></div>
+          <div class="card">
+            <div class="card-head"><h3>預算摘要</h3></div>
+            <div id="budget-summary"></div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<script src="assets/js/data.js"></script>
+<script src="assets/js/charts.js"></script>
+<script src="assets/js/app.js"></script>
+</body>
+</html>
