@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/css/styles.css" />
+<link rel="stylesheet" href="assets/css/planner.css" />
 </head>
 <body>
 <div class="app">
@@ -33,21 +34,15 @@
       <button class="nav-item active" data-view="dashboard">
         <span class="nav-ico">▤</span> 總覽
       </button>
-      <button class="nav-item" data-view="tasks">
-        <span class="nav-ico">▦</span> 專案 & 任務
+      <button class="nav-item" data-view="planner">
+        <span class="nav-ico">▦</span> 排程規劃
       </button>
       <button class="nav-item" data-view="gantt">
         <span class="nav-ico">⤾</span> 甘特圖
       </button>
-      <button class="nav-item" data-view="waterfall">
-        <span class="nav-ico">≋</span> 預算 Waterfall
-      </button>
-
-      <div class="nav-section nav-section-spaced">團隊</div>
-      <button class="nav-item"><span class="nav-ico">◉</span> 成員
-        <span class="nav-badge">6</span></button>
-      <button class="nav-item"><span class="nav-ico">✉</span> 通知
-        <span class="nav-badge nav-badge-hot">3</span></button>
+      <div class="nav-section nav-section-spaced">測試進度</div>
+      <button class="nav-item"><span class="nav-ico">◉</span> 狀態
+        <span class="nav-badge" id="nav-stage-count">0</span></button>
     </nav>
 
     <div class="sidebar-foot">
@@ -70,18 +65,19 @@
         <span id="view-title">專案總覽</span>
       </div>
       <div class="top-actions">
-        <button class="btn btn-ghost" id="btn-demo">↻ 範例資料</button>
+        <button class="btn btn-ghost" id="btn-reset">↻ 還原匯入資料</button>
         <button class="btn btn-primary" id="btn-add">＋ 新增專案</button>
         <button id="theme-toggle" title="切換黑白主題">🌙</button>
       </div>
     </header>
 
     <div class="content">
+      <!-- ========== DASHBOARD ========== -->
       <section id="view-dashboard" class="view active">
         <div class="hero">
           <div>
             <h1 class="page-title" id="dash-title">早安, Alan 👋</h1>
-            <p class="page-sub">這是你手上 5 個專案目前的健康狀況。點任一卡片進入細節。</p>
+            <p class="page-sub" id="dash-sub">管理你的測試時程。</p>
           </div>
           <div class="hero-side" id="today-line"></div>
         </div>
@@ -90,14 +86,14 @@
         <div class="dash-row">
           <div class="card card-grow">
             <div class="card-head">
-              <h3>各專案進度</h3>
-              <span class="card-hint">依完成度排序</span>
+              <h3>專案一覽</h3>
+              <span class="card-hint">點擊進入排程</span>
             </div>
             <div id="proj-bars"></div>
           </div>
           <div class="card">
             <div class="card-head">
-              <h3>狀態分布</h3>
+              <h3>測試項目狀態</h3>
             </div>
             <div id="status-ring"></div>
           </div>
@@ -105,68 +101,50 @@
 
         <div class="card">
           <div class="card-head">
-            <h3>最近任務</h3>
-            <span class="card-hint">待你處理</span>
+            <h3>接下來要開始的項目</h3>
+            <span class="card-hint">依開始日排序</span>
           </div>
           <div id="recent-tasks"></div>
         </div>
       </section>
 
-      <section id="view-tasks" class="view">
+      <!-- ========== PLANNER ========== -->
+      <section id="view-planner" class="view">
         <div class="hero">
           <div>
-            <h1 class="page-title">專案與任務</h1>
-            <p class="page-sub">切換專案、勾選進度、指派負責人。</p>
+            <h1 class="page-title">排程規劃</h1>
+            <p class="page-sub">選擇專案與階段,新增 / 編輯測試項目與時程。</p>
           </div>
         </div>
-        <div class="proj-tabs" id="proj-tabs"></div>
+        <div class="proj-tabs" id="planner-proj-tabs"></div>
+        <div class="stage-tabs" id="stage-tabs"></div>
+
         <div class="card">
           <div class="card-head">
-            <h3 id="proj-detail-title">─</h3>
-            <div class="proj-meta" id="proj-meta"></div>
+            <h3>測試項目</h3>
+            <span class="card-hint">欄位對應 Excel:PCBA/Function · Task · Validation · Start · End · Remark</span>
+            <button class="btn btn-primary btn-small" id="btn-add-item">＋ 新增項目</button>
           </div>
-          <div class="progress-track"><div class="progress-fill" id="proj-detail-progress"></div></div>
-          <div class="task-table-head">
-            <span>任務</span><span>狀態</span><span>負責人</span><span>期間</span><span class="align-r">進度</span>
+          <div class="task-table-head planner-head">
+            <span></span>
+            <span>PCBA / Function</span><span>Task</span><span>Validation</span>
+            <span>Start</span><span>End</span><span>Remark</span><span>狀態</span>
           </div>
-          <div id="task-list"></div>
+          <div id="item-list"></div>
         </div>
       </section>
 
+      <!-- ========== GANTT ========== -->
       <section id="view-gantt" class="view">
         <div class="hero">
           <div>
             <h1 class="page-title">甘特圖</h1>
-            <p class="page-sub">任務時間軸與相依性 — 對應 monday 的 Timeline + Dependency 視圖。</p>
+            <p class="page-sub">拖曳橫條移動時程,拖曳兩端調整天數 — 自己規劃時間。</p>
           </div>
           <div class="legend" id="gantt-legend"></div>
         </div>
+        <div class="stage-tabs compact" id="gantt-stage-tabs"></div>
         <div class="card card-flush" id="gantt-card"></div>
-      </section>
-
-      <section id="view-waterfall" class="view">
-        <div class="hero">
-          <div>
-            <h1 class="page-title">預算 Waterfall</h1>
-            <p class="page-sub">各專案的預算增減拆解,最後落點看總支出 — 對應 monday 的成本分析。</p>
-          </div>
-        </div>
-        <div class="dash-row">
-          <div class="card card-grow" id="waterfall-card">
-            <div class="card-head">
-              <h3>預算 Waterfall</h3>
-              <div class="seg wf-orient" id="wf-orient">
-                <button data-orient="v" class="on"><span class="seg-ico">‖</span> 垂直</button>
-                <button data-orient="h"><span class="seg-ico">≡</span> 水平</button>
-              </div>
-            </div>
-            <div class="wf-container"><svg></svg></div>
-          </div>
-          <div class="card">
-            <div class="card-head"><h3>預算摘要</h3></div>
-            <div id="budget-summary"></div>
-          </div>
-        </div>
       </section>
     </div>
   </main>

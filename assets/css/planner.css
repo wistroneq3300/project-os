@@ -1,0 +1,118 @@
+/* ============================================================
+   Planner + Editable Gantt styles
+   (追加樣式,避免動到原本 styles.css 的既有版型)
+   ============================================================ */
+
+/* ---------- 專案 Tab(hero 內) ---------- */
+.proj-tabs-wrap{display:flex;gap:8px;flex-wrap:wrap}
+#planner-proj-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.ptab{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:10px;
+  border:1px solid var(--line);background:var(--panel);cursor:pointer;transition:.15s}
+.ptab:hover{border-color:var(--line-bright)}
+.ptab.active{background:var(--accent-soft);border-color:rgba(255,178,36,.4)}
+.ptab-add{border-style:dashed;color:var(--text-dim)}
+.ptab-add:hover{border-color:var(--accent);color:var(--accent)}
+.pt-del{font-size:14px;line-height:1;color:var(--text-faint);padding:0 2px;margin-left:2px;cursor:pointer}
+.pt-del:hover{color:var(--bad)}
+.st-pct{font-family:var(--font-mono);font-size:10.5px;color:var(--text-faint)}
+
+/* ---------- 階段 Tab ---------- */
+.stage-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.stage-tabs.compact{margin-bottom:12px}
+.stbtn{display:inline-flex;align-items:center;gap:7px;padding:7px 14px;border-radius:9px;
+  border:1px solid var(--line);background:var(--panel);cursor:pointer;font-weight:600;font-size:13px;transition:.15s}
+.stbtn:hover{border-color:var(--line-bright)}
+.stbtn.active{background:var(--accent-soft);border-color:rgba(255,178,36,.45)}
+.st-del{font-size:13px;line-height:1;color:var(--text-faint);cursor:pointer;margin-left:2px}
+.st-del:hover{color:var(--bad)}
+
+/* ---------- 測試項目表格 ---------- */
+.planner-head,.item-row{
+  display:grid;
+  grid-template-columns:24px 1.1fr 1.6fr 1.2fr .9fr .9fr 1.2fr .85fr 28px;
+  gap:10px;align-items:center;
+}
+.planner-head{padding:10px 14px;font-size:11px;letter-spacing:.02em;color:var(--text-faint);
+  text-transform:uppercase;border-bottom:1px solid var(--line)}
+.item-row{padding:8px 14px;border-bottom:1px solid var(--line);transition:.15s}
+.item-row:hover{background:var(--panel-2)}
+.item-row .ed-f,.item-row .ed-date,.item-row .ed-status{
+  background:transparent;border:1px solid transparent;border-radius:7px;
+  padding:6px 8px;font-size:13px;color:var(--text);font-family:inherit;min-width:0;transition:.15s}
+.item-row .ed-f:hover,.item-row .ed-date:hover,.item-row .ed-status:hover{border-color:var(--line-bright);background:var(--panel)}
+.item-row .ed-f:focus,.item-row .ed-date:focus,.item-row .ed-status:focus{
+  outline:none;border-color:var(--accent);background:var(--panel);box-shadow:0 0 0 3px rgba(255,178,36,.12)}
+.item-row .ed-task{font-weight:600}
+.item-row .ed-date{font-family:var(--font-mono);font-size:12.5px;color-scheme:dark}
+[data-theme="light"] .item-row .ed-date{color-scheme:light}
+.item-row .ed-status{width:100%}
+.it-check{width:20px;height:20px;border-radius:5px;border:1.5px solid var(--line-bright);
+  display:grid;place-items:center;color:transparent;cursor:pointer;font-size:12px;transition:.15s}
+.it-check:hover{border-color:var(--ok)}
+.task-del{width:24px;height:24px;border-radius:6px;border:none;background:transparent;
+  color:var(--text-faint);font-size:15px;line-height:1;cursor:pointer;transition:.15s}
+.task-del:hover{background:rgba(248,113,113,.14);color:var(--bad)}
+
+/* ---------- 可編輯甘特圖 ---------- */
+.g-range{position:absolute;top:0;height:100%;background:rgba(255,178,36,.05);border-radius:4px}
+.g-range-info{margin-left:auto;font-size:11px;color:var(--text-faint);font-family:var(--font-mono)}
+.g-month{position:absolute;top:0;height:100%;display:flex;align-items:center;padding-left:10px;
+  font-size:12px;font-weight:600;color:var(--text-dim);white-space:nowrap;overflow:hidden;
+  border-left:1px solid var(--line);background:linear-gradient(180deg,var(--panel-2),transparent)}
+.g-gridline{position:absolute;top:0;bottom:0;width:0;border-left:1px solid rgba(255,255,255,.05)}
+.g-line-week{border-left-color:rgba(255,255,255,.09)}
+.g-line-strong{border-left-color:rgba(255,255,255,.16)}
+[data-theme="light"] .g-gridline{border-left-color:rgba(10,20,35,.07)}
+[data-theme="light"] .g-line-week{border-left-color:rgba(10,20,35,.12)}
+[data-theme="light"] .g-line-strong{border-left-color:rgba(10,20,35,.2)}
+
+.gantt-row{height:38px;position:relative}
+.gantt-row:hover{background:var(--panel-2)}
+.gantt-label-cell{width:250px;flex:0 0 250px;display:flex;align-items:center;padding:0 14px;
+  font-weight:500;font-size:12.5px;gap:8px;overflow:hidden}
+.g-label-text{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0}
+.g-label-date{font-family:var(--font-mono);font-size:10.5px;color:var(--text-faint);white-space:nowrap}
+.g-sub-label{color:var(--text-faint);font-size:11px;font-weight:700;letter-spacing:.06em}
+
+.g-bar{height:22px;border-radius:6px;display:flex;align-items:center;padding:0 7px;
+  font-size:11px;font-weight:600;color:#fff;box-shadow:0 2px 6px rgba(0,0,0,.25);
+  z-index:2;overflow:hidden;white-space:nowrap;cursor:grab}
+.g-bar:active{cursor:grabbing}
+.g-bar-text{overflow:hidden;text-overflow:ellipsis}
+.g-resize{position:absolute;top:0;bottom:0;width:7px;cursor:ew-resize;opacity:0;transition:.15s}
+.g-resize::after{content:'';position:absolute;top:3px;bottom:3px;left:2px;width:3px;
+  border-radius:2px;background:rgba(255,255,255,.7)}
+.g-resize-l{left:0}
+.g-resize-r{right:0}
+.g-bar:hover .g-resize{opacity:1}
+body.g-dragging .g-bar{pointer-events:none}
+body.g-dragging{cursor:grabbing}
+
+.g-milestone{width:0;height:0;border-left:10px solid transparent;border-right:10px solid transparent;
+  border-top:16px solid var(--accent);cursor:grab;z-index:2;top:4px}
+.g-milestone.done{border-top-color:#34d399}
+.g-milestone.doing{border-top-color:#60a5fa}
+.g-milestone.block{border-top-color:#f87171}
+
+.gantt-foot{height:30px;display:flex;align-items:center;justify-content:center;
+  font-size:12px;color:var(--text-faint);font-family:var(--font-mono)}
+.lg-tip{margin-left:6px;font-size:12px;color:var(--text-faint)}
+.gantt-empty{display:flex;align-items:center;justify-content:center;padding:60px 20px;
+  color:var(--text-faint);font-size:14px}
+.rt-empty{padding:14px;color:var(--text-faint);font-size:13px}
+
+/* ---------- 響應式 ---------- */
+@media(max-width:900px){
+  .planner-head,.item-row{grid-template-columns:24px 1.3fr 1.8fr .9fr .9fr 28px;
+    padding-left:12px;padding-right:12px}
+  .planner-head span:nth-child(4),.item-row .ed-f[data-f="validation"],
+  .planner-head span:nth-child(7),.item-row .ed-f[data-f="remark"]{display:none}
+}
+@media(max-width:640px){
+  .planner-head,.item-row{grid-template-columns:24px 1.4fr .9fr 24px;
+    gap:8px;padding-left:10px;padding-right:8px}
+  .planner-head span:nth-child(3),.item-row .ed-f[data-f="task"],
+  .planner-head span:nth-child(5),.item-row .ed-date[data-f="start"],
+  .planner-head span:nth-child(6),.item-row .ed-date[data-f="end"],
+  .item-row .ed-status{display:none}
+}

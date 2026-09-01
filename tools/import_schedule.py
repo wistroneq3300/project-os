@@ -184,82 +184,12 @@ def main():
     # ---------------- 產生 assets/js/data.js ----------------
     import json as _json
 
-    MILESTONE_META = {
-        # name: (中文名, color, budget_base_each)
-        'EB1': ('EB1 工程驗證', '#ffb224', 180000),
-        'TS1': ('TS1 機種測試', '#60a5fa', 260000),
-        'EB2': ('EB2 工程驗證', '#a78bfa', 180000),
-        'TS2': ('TS2 機種測試', '#34d399', 260000),
-    }
-    OWNER_KEYS = ['alan', 'may', 'john', 'soph', 'tom']
-    OWNER_LOOP = 0
-
-    def iso(d):
-        return f"{d.year}-{str(d.month).zfill(2)}-{str(d.day).zfill(2)}"
-
     # 過濾掉空里程碑
     active = [m for m in built_milestones if m['tasks']]
 
-    # 每群組計次,產生唯一 task id
-    group_counter = {}
-    projects_js = []
-    for ms in active:
-        nm = ms['name']
-        disp, color, base_per_task = MILESTONE_META[nm]
-        tasks = []
-        deps = []
-        n = len(ms['tasks'])
-        for i, t in enumerate(ms['tasks']):
-            g = t['group']
-            t_id = f"{nm.lower()}-{i+1}"
-            owner = OWNER_KEYS[OWNER_LOOP % len(OWNER_KEYS)]
-            OWNER_LOOP += 1
-            tasks.append(dict(
-                id=t_id,
-                name=f"{t['name']}" if g == '未分組' else f"{g} · {t['name']}",
-                grp=g,
-                status=t['status'],
-                owner=owner,
-                start=iso(t['start']),
-                end=iso(t['end']),
-                progress=t['progress'],
-            ))
-            # 群組內 deps:同一群組前一任務 → 下一任務
-            if tasks:                                # tasks 已含先前處理的任務
-                prev = tasks[-1]
-                if prev['grp'] == g:
-                    deps.append([prev['id'], t_id])
-
-        spend_ratio = 0.42   # 已投入比例(示範)
-        budget = n * base_per_task
-        spent = int(budget * spend_ratio)
-        proj_status = 'done' if all(t['status'] == 'done' for t in tasks) else (
-            'doing' if any(t['status'] == 'doing' for t in tasks) else 'todo')
-
-        projects_js.append(dict(
-            id=nm.lower(),
-            name=disp,
-            color=color,
-            status=proj_status,
-            budget=budget,
-            spent=spent,
-            manager=OWNER_KEYS[OWNER_LOOP % len(OWNER_KEYS)],
-            source_milestone=nm,
-            tasks=tasks,
-            deps=deps,
-        ))
-        OWNER_LOOP += 1
-
-    # 序列化成 data.js
-    header = (
-        "/* ============================================================\n"
-        "   ProjectOS — 資料來源:Daily Schedule.xlsx(硬體 Bring-up 排程)\n"
-        "   由 tools/import_schedule.py 自動產生,請勿手動編輯。\n"
-        "   手動改資料請重跑:python3 tools/import_schedule.py\n"
-        "   ============================================================ */\n"
-    )
-    body = _json.dumps(projects_js, ensure_ascii=False, indent=2)
-
+    # ---- 產生新的資料模型:單一專案 + 多階段(stages) ----
+    # PROJECTS = [ { id, name, color, stages: [ { id, name, color, items:[
+    #   { id, group, task, validation, start, end, remark, status } ] } ] } ]
     status_js = (
         "const STATUS_META = {\n"
         "  todo:   { label: '尚未開始', color: '#5d6b7e', bg: 'rgba(93,107,126,.18)' },\n"
@@ -267,27 +197,60 @@ def main():
         "  block:  { label: '卡關',     color: '#f87171', bg: 'rgba(248,113,113,.14)' },\n"
         "  done:   { label: '已完成',   color: '#34d399', bg: 'rgba(52,211,153,.14)' },\n"
         "};\n\n"
-        "const OWNERS = {\n"
-        "  alan: { name: 'Alan',  color: '#60a5fa' },\n"
-        "  may:  { name: 'May',   color: '#f472b6' },\n"
-        "  john: { name: 'John',  color: '#34d399' },\n"
-        "  soph: { name: 'Soph',  color: '#fbbf24' },\n"
-        "  tom:  { name: 'Tom',   color: '#a78bfa' },\n"
-        "};\n\n"
-        "const PROJECTS = \n"
     )
-    helper_js = (
-        "\n"
-        "const projById = id => PROJECTS.find(p => p.id === id);\n"
-        "const taskById = id => { for (const p of PROJECTS) { const t = p.tasks.find(t => t.id === id); if (t) return t; } return null; };\n"
-        "function projProgress(p){ if (!p.tasks.length) return 0; return Math.round(p.tasks.reduce((s,t)=>s+t.progress,0)/p.tasks.length); }\n"
-        "const daySpan = (a,b) => Math.round((new Date(b)-new Date(a))/86400000);\n"
+    STAGE_META = {
+        'EB1': '#ffb224',
+        'TS1': '#60a5fa',
+        'EB2': '#a78bfa',
+        'TS2': '#34d399',
+    }
+    stages = []
+    for ms in active:
+        nm = ms['name']
+        items = []
+        for t in ms['tasks']:
+            task_name = t['name'].split('· ')[-1] if '· ' in t['name'] else t['name']
+            items.append(dict(
+                id=f"{nm.lower()}-{len(items)+1}",
+                group=t['group'],          # PCBA 區:Baseboard/... ; Function 區:Mechenical/...
+                task=task_name,
+                validation='',
+                start=t['start'].isoformat(),
+                end=t['end'].isoformat(),
+                remark='',
+                status=t['status'],
+            ))
+        stages.append(dict(
+            id=nm.lower(),
+            name=nm,
+            color=STAGE_META.get(nm, '#ffb224'),
+            items=items,
+        ))
+
+    project = dict(
+        id='neutrino',
+        name='neutrino',
+        color='#ffb224',
+        stages=stages,
     )
-    data_js = header + "\n" + status_js + body + ";\n" + helper_js
+
+    header = (
+        "/* ============================================================\n"
+        "   ProjectOS — 資料來源:Daily Schedule.xlsx(硬體 Bring-up 排程)\n"
+        "   由 tools/import_schedule.py 自動產生(單一專案 + 多階段)。\n"
+        "   手動改資料請重跑:python3 tools/import_schedule.py\n"
+        "   ============================================================ */\n"
+    )
+    helper_js = "\nconst projById = id => PROJECTS.find(p => p.id === id);\n"
+    data_js = header + "\n" + status_js \
+        + "const PROJECTS = " + _json.dumps([project], ensure_ascii=False, indent=2) \
+        + ";\n" + helper_js
     with open(OUT, 'w', encoding='utf-8') as fh:
         fh.write(data_js)
-    print(f"\n✅ 已寫出 {OUT} ({len(projects_js)} 個里程碑專案)")
-    print(f"   總任務數: {sum(len(p['tasks']) for p in projects_js)}")
+    total_items = sum(len(s['items']) for s in stages)
+    print(f"\n✅ 已寫出 {OUT}")
+    print(f"   階段數: {len(stages)} ({', '.join(s['name'] for s in stages)})")
+    print(f"   測試項目總數: {total_items}")
 
 if __name__ == '__main__':
     main()

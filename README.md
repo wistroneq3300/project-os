@@ -1,95 +1,72 @@
-# ProjectOS — 專案管理工作台 (monday.com 風格原型)
+# ProjectOS — 測試排程規劃工具
 
-一個**純前端**、無任何依賴(不用 CDN 套件,連圖表都用原生 SVG 手刻)的專案管理 Web App 原型。
-靈感來自 monday.com,功能聚焦在「**專案**」:總覽、任務、甘特圖、預算 Waterfall。
+一個**純前端、完全可編輯**的測試排程規劃 Web App,用來規劃專案的硬體
+Bring-up / 驗證測試時程。資料存於瀏覽器 `localStorage`,全部可自行編輯。
 
 ## 怎麼跑
 
 ```
-# 方式一:直接用瀏覽器開 (較建議用方式二,避免 fetch 限制)
-open index.html
-
-# 方式二:起個靜態 server
 python3 -m http.server 8090
-# 然後瀏覽器開 http://localhost:8090
+# 瀏覽器開 http://localhost:8090
 ```
 
-## 功能總覽
+## 功能
 
-| 視圖 | 對應 monday | 說明 |
-|------|------------|------|
-| **總覽 Dashboard** | Dashboards + 儀表板 widget | 4 個指標卡、各專案進度條、任務狀態環形圖、最近待辦任務 |
-| **專案 & 任務** | Board + Table view | 專案 Tab 切換、任務打勾/改狀態、進度、負責人、期間 |
-| **甘特圖** | Timeline view + Dependency | 時間軸任務色條 + 任務相依性箭頭 + 月份格線 + 里程碑 |
-| **預算 Waterfall** | 成本分析 widget | 預算 → 已投入 → 剩餘 的增減拆解,附預算摘要 |
+- **總覽 Dashboard** — 專案數、平均進度、測試項目統計、待辦項目、狀態環形圖。
+- **排程規劃** — 三層結構:專案 → 階段 → 測試項目,全部可新增/編輯/刪除:
+  | 專案 | 階段(如 EB1 / EB2 / TS1 / TS2)| 測試項目(欄位同 Excel) |
+  |------|------|------|
+  | `neutrino` | EB1 / TS1 / TS2 | PCBA/Function · Task · Validation · Start · End · Remark · 狀態 |
+- **甘特圖** — 依階段切換;**拖曳橫條**移動時程、**拖曳左右兩端**調整天數;月份表頭 + 週格線 + 群組區隔。
 
-## 資料來源(匯入)
+所有編輯即時存進 `localStorage`;右上角「↻ 還原匯入資料」可回到 Excel 匯入的原始內容。
 
-`assets/js/data.js` 目前由 **`Daily Schedule.xlsx`**(硬體 Bring-up 排程表)匯入產生:
+## 資料來源
 
-- 時間軸:2026-08-31 ~ 2026-11-27(89 天)
-- 3 個里程碑當作 3 個「專案」:**EB1 工程驗證**、**TS1 機種測試**、**TS2 機種測試**
-- 任務保留原 Excel 的群組(如 `Baseboard · Early Bring up in factory`)、開始/結束日期、狀態與進度
-- EB2 區塊在 Excel 中無任務,故略過不顯示
+起始資料由 **`Daily Schedule.xlsx`**(硬體 Bring-up 排程表)經 `tools/import_schedule.py`
+匯入產生 `assets/js/data.js`:
 
-更換或更新資料後,重新產生:
+- 單一專案 `neutrino`,3 個階段(EB1 / TS1 / TS2),33 個測試項目。
+- EB2 區塊在 Excel 中無任務,故略過。
+- 重新產生:`python3 tools/import_schedule.py`(需 openpyxl)。
 
-```bash
-cd /root/sheng/monday
-python3 tools/import_schedule.py   # 讀取 Daily Schedule.xlsx → 覆寫 assets/js/data.js
-```
-
-> 若想改回原本的「5 個示範專案」,請還原 `assets/js/data.js`。
-> 未來也可接到 monday.com GraphQL API(看板 Boards / 任務 Items)直接取數。
-
-## 資料怎麼換成你自己的
-
-所有假資料都集中在 **`assets/js/data.js`**,是一個結構清楚的常數 `PROJECTS`。
-之後要接真實資料,有三條路:
-
-1. **接 monday API** — 在你的後端用 Monday GraphQL `boards` query,
-   把回傳轉成下面的結構。
-2. **匯入 CSV** — 前端加一個 `<input type=file>` 讀 CSV 轉成結構。
-3. **後端 API** — 把 `data.js` 改成 `fetch('/api/projects')`。
-
-### 資料結構
-
-```js
-{
-  id: 'web',            // 唯一 id
-  name: '官網改版',      // 專案名
-  color: '#ffb224',     // 專案代表色
-  status: 'doing',      // todo | doing | block | done
-  budget: 480000,       // 總預算(數字)
-  spent: 312000,        // 已投入成本
-  manager: 'alan',      // 負責人 id
-  tasks: [{
-    id: 'w1',
-    name: '需求訪談',     // 任務名
-    status: 'done',      // 同上
-    owner: 'alan',       // 負責人 id
-    start: '2026-07-01', // ISO 開始日期
-    end:   '2026-07-14', // 結束日期
-    progress: 100,       // 0-100
-  }],
-  deps: [[ 'w1','w2']],  // 任務相依性:前必須完成,才能開始 'w2'
-}
-```
+> 因為網頁可編輯,實際使用的資料存在瀏覽器 `localStorage`,
+> `data.js` 只是「初始匯入資料」。要重置時按「還原匯入資料」。
 
 ## 檔案結構
 
 ```
-index.html          主畫面與各視圖容器
-assets/css/styles.css  全部樣式(深色主題,品牌色 #ffb224)
-assets/js/data.js      假資料(單一事實來源)
-assets/js/charts.js    手刻 SVG 圖表(donut 環形圖、waterfall)
-assets/js/app.js       路由、互動、甘特圖、圖表驅動
+index.html              主畫面與各視圖容器
+assets/css/styles.css   基礎樣式(深色/亮色主題,品牌色 #ffb224)
+assets/css/planner.css  排程表格 + 可編輯甘特圖樣式
+assets/js/data.js       初始匯入資料(PROJECTS 常數)
+assets/js/charts.js     手刻 SVG 圖表(環形圖)
+assets/js/app.js        資料層(localStorage)＋路由＋排程表格＋可拖曳甘特圖
+tools/import_schedule.py  Excel 匯入程式(→ data.js)
+Daily Schedule.xlsx     原始排程表
 ```
 
-## 下一步(尚未做)
+## 資料結構
 
-- 新增/編輯專案與任務的 modal 表單
-- 拖曳式甘特圖(可改日期/狀態)
-- 多專案瀑布圖(全部專案同圖比較)
-- 接 monday API / CSV 匯入
-- 登入與團隊成員管理
+```js
+PROJECTS = [{
+  id: 'neutrino',
+  name: 'neutrino',
+  color: '#ffb224',
+  stages: [{
+    id: 'eb1',
+    name: 'EB1',
+    color: '#ffb224',
+    items: [{
+      id: 'eb1-1',
+      group: 'Baseboard',        // PCBA / Function 欄位
+      task: 'Early Bring up...',
+      validation: '',
+      start: '2026-09-06',
+      end:   '2026-09-06',
+      remark: '',
+      status: 'todo',            // todo | doing | block | done
+    }],
+  }],
+}]
+```
