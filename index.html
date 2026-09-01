@@ -72,6 +72,7 @@
       <div class="top-actions">
         <button class="btn btn-ghost" id="btn-demo">↻ 範例資料</button>
         <button class="btn btn-primary" id="btn-add">＋ 新增專案</button>
+        <button id="theme-toggle" title="切換黑白主題">🌙</button>
       </div>
     </header>
 
@@ -151,7 +152,16 @@
           </div>
         </div>
         <div class="dash-row">
-          <div class="card card-grow" id="waterfall-card"><div class="wf-container"><svg></svg></div></div>
+          <div class="card card-grow" id="waterfall-card">
+            <div class="card-head">
+              <h3>預算 Waterfall</h3>
+              <div class="seg wf-orient" id="wf-orient">
+                <button data-orient="v" class="on"><span class="seg-ico">‖</span> 垂直</button>
+                <button data-orient="h"><span class="seg-ico">≡</span> 水平</button>
+              </div>
+            </div>
+            <div class="wf-container"><svg></svg></div>
+          </div>
           <div class="card">
             <div class="card-head"><h3>預算摘要</h3></div>
             <div id="budget-summary"></div>

@@ -12,6 +12,8 @@
   const VIEWS = { dashboard: '專案總覽', tasks: '專案 & 任務', gantt: '甘特圖', waterfall: '預算 Waterfall' };
   let currentView = 'dashboard';
   let activeProj = null;
+  let theme = localStorage.getItem('pos-theme') || 'dark';     // 'dark' | 'light'
+  let wfOrient = localStorage.getItem('pos-orient') || 'v';    // 'v' | 'h'
 
   const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
@@ -105,7 +107,7 @@
           `).join('')}
         </div>
       </div>`;
-    Charts.donut($('#ring-svg'), arr.map(c=>({value:c.value,color:STATUS_META[c.key].color})), { center:String(total), sub:'全部任務', size:150, stroke:21 });
+    Charts.donut($('#ring-svg'), arr.map(c=>({value:c.value,color:STATUS_META[c.key].color})), { center:String(total), sub:'全部任務', size:150, stroke:21, theme });
   }
 
   /* =====================================================
@@ -291,7 +293,10 @@
       { label:'已投入',   value: -p.spent,  color:'#f87171' },
       { label:'剩餘(總)', isTotal:true, color:'#fbbf24' },
     ];
-    Charts.waterfall($('#waterfall-card svg'), waterData);
+    Charts.waterfall($('#waterfall-card svg'), waterData, { orientation: wfOrient, theme });
+
+    // keep orientation segmented control in sync
+    $$('#wf-orient button').forEach(b => b.classList.toggle('on', b.dataset.orient === wfOrient));
 
     $('#budget-summary').innerHTML = `
       <div class="budget-sum">
@@ -322,8 +327,32 @@
     if (!$('.sidebar').contains(e.target)) $('.sidebar').classList.remove('open');
   });
 
+  // ---- theme switch ----
+  const themeToggle = $('#theme-toggle');
+  function applyTheme(){
+    document.documentElement.setAttribute('data-theme', theme);
+    themeToggle.textContent = theme === 'dark' ? '☀️' : '🌙';
+    themeToggle.title = theme === 'dark' ? '切換到亮色' : '切換到暗色';
+  }
+  themeToggle.onclick = () => {
+    theme = theme === 'dark' ? 'light' : 'dark';
+    localStorage.setItem('pos-theme', theme);
+    applyTheme();
+    render(currentView);   // re-render current view so SVG charts pick up the new palette
+  };
+
+  // ---- waterfall orientation ----
+  $('#wf-orient').addEventListener('click', e => {
+    const btn = e.target.closest('button[data-orient]');
+    if (!btn) return;
+    wfOrient = btn.dataset.orient;
+    localStorage.setItem('pos-orient', wfOrient);
+    renderWaterfall();
+  });
+
   // init
   activeProj = PROJECTS[0].id;
+  applyTheme();
   go('dashboard');
   window.addEventListener('resize', () => { if (currentView==='waterfall') renderWaterfall(); });
 })();
