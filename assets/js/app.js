@@ -480,8 +480,8 @@
     }
 
     const xFor = date => Math.max(0, Math.min(daySpan(minD, date)*dayW, gridW));
-    const minBarW = 72;   // 最小橫條寬(讓短任務也能撐開,填滿右側空間)
-    const wFor = it => Math.max(daySpan(it.start, it.end)*dayW, minBarW);
+    // 寬度精確對應天數;至少 14px 避免零寬度不可見
+    const wFor = it => Math.max(daySpan(it.start, it.end)*dayW, 14);
 
     const LABELW = 250;
     const ROWH = 38, HEADH = 46, PAD = 6, BARH = 22;
@@ -513,7 +513,6 @@
         if (!it.start || !it.end) return;
         const left = xFor(it.start);
         const w = wFor(it);
-        const isMilestone = daySpan(it.start,it.end) <= 1;
         const color = STATUS_META[it.status]?.color || '#5d6b7e';
         rows += `<div class="gantt-row" data-item="${it.id}">
           <div class="gantt-label-cell">
@@ -523,14 +522,12 @@
           </div>
           <div class="gantt-timeline-cell">
             ${gridCols}
-            ${isMilestone
-              ? `<div class="g-milestone ${it.status}" data-item="${it.id}" style="left:${left}px" title="${esc(it.task)}"></div>`
-              : `<div class="g-bar ${it.status}" data-item="${it.id}"
-                   style="left:${left}px;width:${w}px;background:${color}"
-                   title="${esc(it.task)} · ${fmt(it.start)} → ${fmt(it.end)}">
-                  <span class="g-resize g-resize-l" data-r="l"></span>
-                  <span class="g-resize g-resize-r" data-r="r"></span>
-                </div>`}
+            <div class="g-bar ${it.status}" data-item="${it.id}"
+                 style="left:${left}px;width:${w}px;background:${color}"
+                 title="${esc(it.task)} · ${fmt(it.start)} → ${fmt(it.end)}">
+              <span class="g-resize g-resize-l" data-r="l"></span>
+              <span class="g-resize g-resize-r" data-r="r"></span>
+            </div>
           </div>
         </div>`;
       });
@@ -575,13 +572,13 @@
       const target = bars[it.id]; if (!target) return;
       const tR = target.getBoundingClientRect();
       // 目標左端(箭頭落點)
-      let ex = tR.left - bodyR.left + (target.classList.contains('g-milestone') ? 16 : 4);
+      let ex = tR.left - bodyR.left + 4;
       let ey = tR.top - bodyR.top + tR.height/2;
       it.deps.forEach(depId => {
         const dep = bars[depId]; if (!dep) return;
         const dR = dep.getBoundingClientRect();
         // 前驅右端(箭頭起點)
-        let sx = dR.right - bodyR.left - (dep.classList.contains('g-milestone') ? 16 : 4);
+        let sx = dR.right - bodyR.left - 4;
         let sy = dR.top - bodyR.top + dR.height/2;
         // 避免目標在前驅左邊造成反向
         if (sx >= ex - 6) { sx = dR.right - bodyR.left; }
@@ -602,10 +599,10 @@
 
   function wireGanttDrag(p, stage, gridW, dayW, xFor, minD){
     const get = id => stage.items.find(it => it.id === id);
-    const minW = 72;   // 與 renderGantt 的最小橫條寬一致
+    const minW = Math.max(14, dayW);   // 最小 1 天 / 14px
     const setBar = (bar, left, w) => { bar.style.left = left+'px'; bar.style.width = w+'px'; };
 
-    $$('.gantt .g-bar, .gantt .g-milestone').forEach(bar => {
+    $$('.gantt .g-bar').forEach(bar => {
       const itid = bar.dataset.item;
       let mode=null, startX, origLeft, origW, origStart, origEnd;
 
