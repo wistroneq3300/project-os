@@ -283,7 +283,7 @@
   }
 
   function addItem(p, stage){
-    stage.items.push({ id: uid('it'), group:'', task:'新項目', validation:'', start: todayStr(), end: todayStr(), remark:'', status:'todo', equip:0 });
+    stage.items.push({ id: uid('it'), group:'', task:'新項目', validation:'', start: todayStr(), end: todayStr(), remark:'', status:'todo', equip:0, deps:[] });
     saveData(); renderPlanner(); renderGantt();
   }
 
@@ -299,6 +299,7 @@
         <input type="date" class="ed-date" data-f="end" value="${it.end}">
         <input class="ed-f ed-remark" data-f="remark" value="${esc(it.remark)}" placeholder="Remark">
         <input type="number" class="ed-f ed-equip" data-f="equip" value="${it.equip||0}" min="0" step="1" title="機台數" placeholder="機台">
+        <button class="ed-f ed-deps${(it.deps&&it.deps.length)?' has-dep':''}" data-deps="${it.id}" title="關聯:勾選「須等其完成的前驅任務」">${(it.deps&&it.deps.length)?it.deps.length+' ⤹':'⤹'}</button>
         <select class="ed-f ed-status" data-f="status">
           ${['todo','doing','block','done'].map(s=>`<option value="${s}" ${it.status===s?'selected':''}>${STATUS_META[s].label}</option>`).join('')}
         </select>
@@ -340,6 +341,63 @@
       activeStage = stage.id;
       saveData(); renderPlanner();
     });
+    // 關聯(deps)popover
+    $$('#item-list .ed-deps').forEach(btn => btn.onclick = e => {
+      e.stopPropagation();
+      openDepsPicker(p, stage, btn);
+    });
+  }
+
+  /* deps 勾選 popover:選「這個任務須等其完成的前驅任務」(含專案所有階段) */
+  function openDepsPicker(p, stage, anchor){
+    closeDepsPicker();
+    const it = stage.items.find(x => x.id === anchor.dataset.deps);
+    if (!it) return;
+    if (!Array.isArray(it.deps)) it.deps = [];
+    // 彙整專案「所有階段」的任務,依階段分群
+    const groups = [];
+    p.stages.forEach(st => {
+      const items = st.items.filter(x => x.id !== it.id);
+      if (items.length) groups.push({ stage: st, items });
+    });
+    const pop = document.createElement('div');
+    pop.className = 'deps-pop';
+    pop.innerHTML = `
+      <div class="deps-pop-h">前驅任務(須先完成)</div>
+      ${groups.length ? groups.map(g => `
+        <div class="deps-group-h">${esc(g.stage.name)}${g.stage===stage?' (本階段)':''}</div>
+        ${g.items.map(x => `
+          <label class="deps-opt">
+            <input type="checkbox" data-depid="${x.id}" ${it.deps.includes(x.id)?'checked':''}>
+            <span class="dopts-task">${esc(x.task)||'(未命名)'}</span>
+            <span class="dopts-range">${fmt(x.start)}→${fmt(x.end)}</span>
+          </label>`).join('')}
+      `).join('')
+      : '<div class="deps-empty">專案沒有其他任務可關聯。</div>'}
+      <div class="deps-pop-f"><button data-dep-done>完成</button></div>`;
+    document.body.appendChild(pop);
+    // position near anchor
+    const r = anchor.getBoundingClientRect();
+    pop.style.left = Math.max(8, Math.min(r.left, window.innerWidth - 280)) + 'px';
+    pop.style.top = (r.bottom + 6) + 'px';
+    pop.querySelectorAll('input[data-depid]').forEach(cb => cb.onchange = () => {
+      const id = cb.dataset.depid;
+      if (cb.checked) { if (!it.deps.includes(id)) it.deps.push(id); }
+      else it.deps = it.deps.filter(d => d !== id);
+      anchor.textContent = it.deps.length ? it.deps.length + ' ⤹' : '⤹';
+      anchor.classList.toggle('has-dep', !!it.deps.length);
+      saveData();
+      if (currentView === 'gantt') renderGantt();
+    });
+    pop.querySelector('[data-dep-done]').onclick = closeDepsPicker;
+    setTimeout(() => {
+      const onDoc = ev => { if (!pop.contains(ev.target) && ev.target !== anchor) { closeDepsPicker(); document.removeEventListener('click', onDoc); } };
+      document.addEventListener('click', onDoc);
+    }, 0);
+  }
+  function closeDepsPicker(){
+    const pop = document.querySelector('.deps-pop');
+    if (pop) pop.remove();
   }
 
   function updateTabs(p, stage){
@@ -403,13 +461,22 @@
       m = next;
     }
 
-    // week gridlines
+    // week gridlines + 每日日期標籤(每天必標;格太窄時自動縮小字)
     let gridCols = '';
+    let dayLabels = '';
+    const dayFont = dayW >= 30 ? 10.5 : dayW >= 18 ? 9.5 : dayW >= 11 ? 8 : 7;
+    const dayStyle = `font-size:${dayFont}px`;
     for (let i=0; i<=totalDays; i++){
       const d = addDays(minD, i);
       const monthStart = /-01$/.test(d);
       const day = new Date(d).getDay();
       gridCols += `<div class="g-gridline ${monthStart?'g-line-strong':(day===0?'g-line-week':'')}" style="left:${i*dayW}px"></div>`;
+      if (i < totalDays){
+        const dow = new Date(d).getDay();
+        const wend = (dow===0||dow===6);
+        const txt = new Date(d).getDate();
+        dayLabels += `<div class="g-day ${wend?'g-day-wkend':''}${new Date(d).getDate()===1?' g-day-m1':''}" style="left:${i*dayW}px;width:${dayW}px;${dayStyle}" title="${d}">${txt}</div>`;
+      }
     }
 
     const xFor = date => Math.max(0, Math.min(daySpan(minD, date)*dayW, gridW));
@@ -474,18 +541,63 @@
         <div class="gantt-inner" id="gantt-inner">
           <div class="gantt-head">
             <div class="gantt-labels"><span class="g-hint">${esc(stage.name)} 項目</span></div>
-            <div class="gantt-timeline" style="height:${HEADH}px;position:relative">
-              <div class="g-months" style="width:${gridW}px">${monthHeader}</div>
+            <div class="gantt-timeline" style="height:${HEADH+20}px;position:relative">
+              <div class="g-months" style="width:${gridW}px;bottom:20px;top:0">${monthHeader}</div>
+              <div class="g-days" style="bottom:0;height:20px;width:${gridW}px">${dayLabels}</div>
             </div>
           </div>
-          <div style="position:relative">
+          <div class="gantt-body" style="position:relative">
             ${rows}
+            <svg class="dep-svg" id="gantt-deps"></svg>
           </div>
           <div class="gantt-foot" id="gantt-tip"></div>
         </div>
       </div>`;
 
     wireGanttDrag(p, stage, gridW, dayW, xFor, minD);
+    // 用實際 DOM 位置畫 deps 箭頭(在 paintDeps 內)
+    requestAnimationFrame(() => paintDeps(stage));
+  }
+
+  /* 畫 deps 箭頭:前驅任務右端 → 任務左端,依 getBoundingClientRect 計算 */
+  function paintDeps(stage){
+    const svg = document.getElementById('gantt-deps');
+    if (!svg || !stage || !stage.items) return;
+    const body = svg.parentNode; // .gantt-body
+    const bodyR = body.getBoundingClientRect();
+    const get = id => stage.items.find(it => it.id === id);
+    const bars = {};
+    body.querySelectorAll('.g-bar,.g-milestone').forEach(el => bars[el.dataset.item] = el);
+
+    let shapes = '';
+    stage.items.forEach(it => {
+      if (!it.deps || !it.deps.length) return;
+      const target = bars[it.id]; if (!target) return;
+      const tR = target.getBoundingClientRect();
+      // 目標左端(箭頭落點)
+      let ex = tR.left - bodyR.left + (target.classList.contains('g-milestone') ? 16 : 4);
+      let ey = tR.top - bodyR.top + tR.height/2;
+      it.deps.forEach(depId => {
+        const dep = bars[depId]; if (!dep) return;
+        const dR = dep.getBoundingClientRect();
+        // 前驅右端(箭頭起點)
+        let sx = dR.right - bodyR.left - (dep.classList.contains('g-milestone') ? 16 : 4);
+        let sy = dR.top - bodyR.top + dR.height/2;
+        // 避免目標在前驅左邊造成反向
+        if (sx >= ex - 6) { sx = dR.right - bodyR.left; }
+        const d = `M ${sx} ${sy} C ${sx + (ex-sx)*0.45} ${sy}, ${sx + (ex-sx)*0.55} ${ey}, ${ex-7} ${ey}`;
+        shapes += `<path d="${d}"/>`;
+        // 箭頭
+        shapes += `<polygon points="${ex-7},${ey-4} ${ex-7},${ey+4} ${ex-1},${ey}"/>`;
+        // 起點圓點
+        shapes += `<circle cx="${sx}" cy="${sy}" r="2.5" style="fill:#fff;stroke:currentColor"/>`;
+      });
+    });
+    svg.setAttribute('width', bodyR.width);
+    svg.setAttribute('height', bodyR.height);
+    svg.style.width = bodyR.width+'px';
+    svg.style.height = bodyR.height+'px';
+    svg.innerHTML = shapes;
   }
 
   function wireGanttDrag(p, stage, gridW, dayW, xFor, minD){
