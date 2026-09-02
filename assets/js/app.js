@@ -386,8 +386,10 @@
     const minD = addDays(allDates.reduce((a,b)=>new Date(a)<new Date(b)?a:b), -2);
     const maxD = addDays(allDates.reduce((a,b)=>new Date(a)>new Date(b)?a:b), 2);
     const totalDays = Math.max(daySpan(minD, maxD), 7);
-    const dayW = totalDays <= 30 ? 22 : totalDays <= 60 ? 14 : totalDays <= 120 ? 9 : 6;
-    const gridW = Math.max(totalDays * dayW, 560);
+    // 軸放大模式:grid 寬 = 卡片可用寬(撐滿),dayW 按比例縮放 → bar 寬度精確對應天數
+    const cardW = $('#gantt-card').clientWidth;
+    const gridW = Math.max(cardW - 250 - 48, 600);
+    const dayW = gridW / totalDays;
 
     // month header
     let monthHeader = '';
