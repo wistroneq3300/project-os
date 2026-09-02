@@ -42,7 +42,100 @@
     } catch(e){}
     return defaultData();
   }
-  function saveData(){ try { localStorage.setItem(KEY, JSON.stringify(DATA)); } catch(e){} }
+  function saveData(){ try { localStorage.setItem(KEY, JSON.stringify(DATA)); } catch(e){} syncToServer(); }
+
+  /* ================= 多人共享同步(server.js) ================= */
+  let syncRev = 0;                 // 目前看到的資料版本
+  let syncReady = false;           // 是否已跟伺服器同步過
+  let syncDisabled = false;        // 偵測到無共享後端時停用(退回純本機)
+  const SYNC_POLL_MS = 4000;       // 輪詢間隔(看別人改動)
+  const SYNC_DEBOUNCE_MS = 600;    // 上傳防抖
+  let syncTimer = null;
+
+  function serverUp(){ return !syncDisabled && typeof PROJ_SERVER_URL !== 'undefined' && PROJ_SERVER_URL; }
+  async function fetchServer(){
+    try { const r = await fetch(PROJ_SERVER_URL); if (r.ok) return await r.json(); }
+    catch(e){}
+    return null;
+  }
+  // 從伺服器拉最新資料;有外部改動則套用並重繪
+  async function pullFromServer(silent){
+    const s = await fetchServer();
+    if (!s) { syncDisabled = true; return; }   // 後端不存在 → 退回純本機
+    const remoteRev = s.rev || 0;
+    if (!syncReady) {
+      // 首次:以伺服器資料為準(無資料則保留本地)
+      syncReady = true; syncRev = remoteRev;
+      if (Array.isArray(s.data) && s.data.length) {
+        const changed = JSON.stringify(s.data) !== JSON.stringify(DATA);
+        DATA = s.data;
+        if (changed) applyServerData();
+      }
+      return;
+    }
+    // 平常輪詢:只有當別人(非自己)改過、且本地沒有更新的未上傳改動時才套用
+    if (remoteRev > syncRev) {
+      const needConfirm = hasLocalChanges();
+      syncRev = remoteRev;
+      if (Array.isArray(s.data) && s.data.length) {
+        if (needConfirm) {
+          if (silent) return; // 靜默輪詢遇到未存改動,先不動
+          const apply = confirm('Server data changed by someone else. Overwrite your local edits with the server version?');
+          if (!apply) return;
+        }
+        DATA = s.data;
+        applyServerData();
+      }
+    }
+  }
+  let localDirty = false;
+  function hasLocalChanges(){ return localDirty; }
+  // 防抖上傳
+  function syncToServer(){
+    localDirty = true;
+    if (syncTimer) clearTimeout(syncTimer);
+    syncTimer = setTimeout(async () => {
+      if (!serverUp()) return;
+      try {
+        const r = await fetch(PROJ_SERVER_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ data: DATA, baseRev: syncRev })
+        });
+        if (r.status === 409) {
+          const c = await r.json();
+          const takeMine = confirm('Someone else changed the data while you were editing.\n\n[OK] = keep YOUR changes (overwrite theirs)\n[Cancel] = load THEIR latest version');
+          if (takeMine) {
+            syncRev = c.rev;
+            await pushForce(c.rev);
+          } else {
+            if (Array.isArray(c.data)) { DATA = c.data; syncRev = c.rev; }
+            applyServerData();
+          }
+        } else if (r.ok) {
+          const j = await r.json();
+          syncRev = j.rev;
+        }
+        localDirty = false;
+      } catch(e){}
+    }, SYNC_DEBOUNCE_MS);
+  }
+  async function pushForce(rev){
+    try {
+      const r = await fetch(PROJ_SERVER_URL, {
+        method: 'POST', headers: { 'Content-Type':'application/json' },
+        body: JSON.stringify({ data: DATA, baseRev: rev })
+      });
+      if (r.ok) { const j = await r.json(); syncRev = j.rev; }
+    } catch(e){}
+  }
+  function applyServerData(){
+    saveLocalOnly();
+    render(currentView||'dashboard');
+  }
+  function saveLocalOnly(){ try { localStorage.setItem(KEY, JSON.stringify(DATA)); } catch(e){} }
+  // 定時輪詢別人改動
+  setInterval(() => { if (serverUp() && syncReady) pullFromServer(true); }, SYNC_POLL_MS);
 
   let DATA = loadData();
 
@@ -995,7 +1088,8 @@
 
   // 還原匯入資料
   $('#btn-reset').onclick = () => {
-    if (confirm('Restore the original data from Excel? This will clear all your edits.')) {
+    const shareNote = serverUp() ? '\n\n⚠ In shared-server mode this also resets the data EVERYONE sees.\n' : '';
+    if (confirm('Restore the original data from Excel? This will clear all your edits.'+shareNote)) {
       DATA = defaultData();
       saveData(); activeProj = DATA[0]?.id||null; activeStage = null;
       render(currentView);
@@ -1036,4 +1130,6 @@
   activeStage = DATA[0]?.stages[0]?.id || null;
   applyTheme();
   go('dashboard');
+  // 啟動時與共享伺服器同步(若不存在伺服器則靜默退回本地)
+  if (serverUp()) pullFromServer(false);
 })();
