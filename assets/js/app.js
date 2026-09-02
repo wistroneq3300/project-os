@@ -11,7 +11,7 @@
   const $ = s => document.querySelector(s);
   const $$ = s => Array.from(document.querySelectorAll(s));
 
-  const VIEWS = { dashboard: '總覽', planner: '排程規劃', gantt: '甘特圖', waterfall: '機台瀑布' };
+  const VIEWS = { dashboard: 'Dashboard', planner: 'Planning', gantt: 'Gantt', waterfall: 'Machines' };
   let currentView = 'dashboard';
   let activeProj = null;    // project id
   let activeStage = null;   // stage id
@@ -84,15 +84,15 @@
     const dueSoon = items.filter(x=>x.it.status!=='done').sort((a,b)=>new Date(a.it.start)-new Date(b.it.start)).slice(0,5);
 
     $('#dash-sub').textContent = DATA.length
-      ? `共有 ${DATA.length} 個專案、${DATA.reduce((a,p)=>a+p.stages.length,0)} 個階段、${items.length} 個測試項目。`
-      : '還沒有專案,點右上角「＋ 新增專案」開始。';
-    $('#today-line').textContent = new Date().toLocaleDateString('zh-TW',{year:'numeric',month:'long',day:'numeric',weekday:'long'});
+      ? `${DATA.length} project${DATA.length===1?'':'s'}, ${DATA.reduce((a,p)=>a+p.stages.length,0)} stages, ${items.length} test items.`
+      : 'No projects yet — click ＋ New Project in the top-right to begin.';
+    $('#today-line').textContent = new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric',weekday:'long'});
 
     $('#metric-grid').innerHTML = [
-      { l:'專案數', v: DATA.length, u:' 個', d: DATA.reduce((a,p)=>a+p.stages.length,0)+' 個階段', cls:'m-flat' },
-      { l:'平均進度', v: avg, u:' %', d: avg>70?'超前':avg>40?'穩定':'需關注', cls: avg>70?'m-up':avg>40?'m-flat':'m-down' },
-      { l:'測試項目', v: items.length, u:' 件', d: `${done} 完成 / ${doing} 進行`, cls:'m-flat' },
-      { l:'待辦項目', v: items.length - done, u:' 件', d: block?'含 '+block+' 個卡關':'一切順利', cls: block?'m-down':'m-up' },
+      { l:'Projects', v: DATA.length, u:'', d: DATA.reduce((a,p)=>a+p.stages.length,0)+' stages', cls:'m-flat' },
+      { l:'Avg. Progress', v: avg, u:' %', d: avg>70?'Ahead of schedule':avg>40?'On track':'Needs attention', cls: avg>70?'m-up':avg>40?'m-flat':'m-down' },
+      { l:'Test Items', v: items.length, u:'', d: `${done} done / ${doing} in progress`, cls:'m-flat' },
+      { l:'Pending', v: items.length - done, u:'', d: block? block+' blocked':'All good', cls: block?'m-down':'m-up' },
     ].map(m => `
       <div class="metric">
         <div class="m-label">${m.l}</div>
@@ -105,7 +105,7 @@
     $('#proj-bars').innerHTML = sorted.map(p => `
       <div class="proj-bar" data-proj="${p.id}" style="cursor:pointer">
         <span class="pb-dot" style="background:${p.color}"></span>
-        <div class="pb-name">${esc(p.name)}<small>${p.stages.length} 個階段 · ${p.stages.reduce((a,s)=>a+s.items.length,0)} 個項目</small></div>
+        <div class="pb-name">${esc(p.name)}<small>${p.stages.length} stage${p.stages.length===1?"":"s"} · ${p.stages.reduce((a,s)=>a+s.items.length,0)} items</small></div>
         <div class="pb-track"><div class="pb-fill" style="width:${projectProgress(p)}%;background:linear-gradient(90deg,${p.color},#fff2)"></div></div>
         <span class="pb-pct">${projectProgress(p)}%</span>
       </div>`).join('');
@@ -116,11 +116,11 @@
     $('#recent-tasks').innerHTML = dueSoon.length ? dueSoon.map(({p,s,it}) => `
       <div class="rt-row">
         <div class="rt-check" data-item="${it.id}" data-stage="${s.id}" style="cursor:pointer">✓</div>
-        <div class="rt-name">${esc(it.task)||'(未命名)'}</div>
+        <div class="rt-name">${esc(it.task)||'(untitled)'}</div>
         <span class="rt-proj" style="color:${p.color}">${esc(p.name)} / ${esc(s.name)}</span>
         <span class="rt-owner">${esc(it.group)}</span>
         <span class="rt-due">${fmt(it.start)} → ${fmt(it.end)}</span>
-      </div>`).join('') : '<div class="rt-empty">目前沒有待辦項目 🎉</div>';
+      </div>`).join('') : '<div class="rt-empty">Nothing pending 🎉</div>';
     $$('#recent-tasks .rt-check').forEach(el => el.onclick = () => {
       const st = findStage(activeProj||DATA[0]?.id, el.dataset.stage) || { items: [] };
       const it = (findStage(el.dataset.stage?''.toString(): (DATA[0]?.id||''), el.dataset.stage)||{items:[]});
@@ -153,7 +153,7 @@
           `).join('')}
         </div>
       </div>`;
-    if (Charts.donut) Charts.donut($('#ring-svg'), arr.map(c=>({value:c.value,color:STATUS_META[c.key].color})), { center:String(items.length)||'0', sub:'全部項目', size:150, stroke:21, theme });
+    if (Charts.donut) Charts.donut($('#ring-svg'), arr.map(c=>({value:c.value,color:STATUS_META[c.key].color})), { center:String(items.length)||'0', sub:'All items', size:150, stroke:21, theme });
   }
 
   /* =====================================================
@@ -163,7 +163,7 @@
     if (!DATA.length) {
       $('#planner-proj-tabs').innerHTML = '';
       $('#stage-tabs').innerHTML = '';
-      $('#item-list').innerHTML = '<div class="rt-empty">先點右上角新增專案。</div>';
+      $('#item-list').innerHTML = '<div class="rt-empty">Add a project first (top-right ＋ New Project).</div>';
       return;
     }
     if (!activeProj || !findProject(activeProj)) activeProj = DATA[0].id;
@@ -174,16 +174,16 @@
         <span class="pt-dot" style="background:${p.color}"></span>
         <span class="pt-name">${esc(p.name)}</span>
         <span class="pt-pct">${projectProgress(p)}%</span>
-        <span class="pt-del" data-delproj="${p.id}" title="刪除專案">×</span>
+        <span class="pt-del" data-delproj="${p.id}" title="Delete project">×</span>
       </button>`).join('')
-      + `<button class="ptab ptab-add" id="planner-add-stage" title="新增階段">＋ 階段</button>`;
+      + `<button class="ptab ptab-add" id="planner-add-stage" title="Add stage">＋ Stage</button>`;
 
     $$('#planner-proj-tabs .ptab[data-proj]').forEach(b => b.onclick = () => {
       activeProj = b.dataset.proj; activeStage = null; renderPlanner();
     });
     $$('#planner-proj-tabs .pt-del').forEach(el => el.onclick = e => {
       e.stopPropagation();
-      if (confirm('確定刪除這個專案?')) {
+      if (confirm('Delete this project?')) {
         DATA = DATA.filter(p=>p.id!==el.dataset.delproj);
         if (activeProj===el.dataset.delproj) activeProj = DATA[0]?.id || null;
         activeStage = null; saveData(); renderPlanner();
@@ -195,7 +195,7 @@
     if (!p) return;
     if (!activeStage || !p.stages.find(s=>s.id===activeStage)) activeStage = p.stages[0]?.id || null;
     if (!activeStage && p.stages.length===0) {
-      $('#stage-tabs').innerHTML = '<div class="rt-empty">此專案還沒有階段,點 「＋ 階段」新增(如 EB1 / TS1 / EB2 / TS2)。</div>';
+      $('#stage-tabs').innerHTML = '<div class="rt-empty">No stages in this project yet — click ＋ Stage to add one (e.g. EB1 / TS1).</div>';
       $('#item-list').innerHTML = '';
       return;
     }
@@ -204,15 +204,15 @@
     // stage tabs (可拖曳排序)
     $('#stage-tabs').innerHTML = p.stages.map(s => `
       <button class="stbtn ${s.id===activeStage?'active':''}" data-stage="${s.id}" draggable="true">
-        <span class="st-grip" title="拖曳排序">⠿</span>
+        <span class="st-grip" title="Drag to reorder">⠿</span>
         <span class="pt-dot" style="background:${s.color}"></span>${esc(s.name)}
         <span class="st-pct">${stageProgress(s)}%</span>
-        <span class="st-del" data-delstage="${s.id}" title="刪除階段">×</span>
+        <span class="st-del" data-delstage="${s.id}" title="Delete stage">×</span>
       </button>`).join('');
     $$('#stage-tabs .stbtn[data-stage]').forEach(b => b.onclick = () => { activeStage = b.dataset.stage; renderPlanner(); });
     $$('#stage-tabs .st-del').forEach(el => el.onclick = e => {
       e.stopPropagation();
-      if (confirm('確定刪除這個階段?')) {
+      if (confirm('Delete this stage?')) {
         const st = findStage(activeProj, el.dataset.delstage);
         if (st) { p.stages = p.stages.filter(s=>s.id!==el.dataset.delstage); if (activeStage===el.dataset.delstage) activeStage = p.stages[0]?.id||null; saveData(); renderPlanner(); }
       }
@@ -268,11 +268,11 @@
   }
 
   function addStage(){
-    const nm = prompt('新增階段名稱(如 EB1、EB2、TS1、TS2):', 'EB1');
+    const nm = prompt('Stage name (e.g. EB1, TS1): ', 'EB1');
     if (nm === null) return;
     const p = findProject(activeProj);
     if (!p) return;
-    const name = nm.trim() || '階段';
+    const name = nm.trim() || 'Stage';
     const colors = ['#ffb224','#60a5fa','#f472b6','#34d399','#a78bfa','#f87171'];
     const st = { id: uid('st'), name, color: colors[p.stages.length%colors.length], items: [] };
     // 插入到「目前所在階段」之後(你說 EB2 加在中間這種情形)
@@ -283,7 +283,7 @@
   }
 
   function addItem(p, stage){
-    stage.items.push({ id: uid('it'), group:'', task:'新項目', validation:'', start: todayStr(), end: todayStr(), remark:'', status:'todo', equip:0, deps:[] });
+    stage.items.push({ id: uid('it'), group:'', task:'New Item', validation:'', start: todayStr(), end: todayStr(), remark:'', status:'todo', equip:0, deps:[] });
     saveData(); renderPlanner(); renderGantt();
   }
 
@@ -291,24 +291,24 @@
     if (!stage || !stage.items) return;
     const rows = stage.items.map((it, i) => `
       <div class="item-row" data-item="${it.id}">
-        <div class="it-check" data-check="${it.id}" title="標記完成">✓</div>
-        <input class="ed-f" data-f="group" value="${esc(it.group)}" placeholder="如 Baseboard">
-        <input class="ed-f ed-task" data-f="task" value="${esc(it.task)}" placeholder="Task 名稱">
+        <div class="it-check" data-check="${it.id}" title="Mark as done">✓</div>
+        <input class="ed-f" data-f="group" value="${esc(it.group)}" placeholder="e.g. Baseboard">
+        <input class="ed-f ed-task" data-f="task" value="${esc(it.task)}" placeholder="Task name">
         <input class="ed-f" data-f="validation" value="${esc(it.validation)}" placeholder="Validation">
         <input type="date" class="ed-date" data-f="start" value="${it.start}">
         <input type="date" class="ed-date" data-f="end" value="${it.end}">
         <input class="ed-f ed-remark" data-f="remark" value="${esc(it.remark)}" placeholder="Remark">
-        <input type="number" class="ed-f ed-equip" data-f="equip" value="${it.equip||0}" min="0" step="1" title="機台數" placeholder="機台">
-        <button class="ed-f ed-deps${(it.deps&&it.deps.length)?' has-dep':''}" data-deps="${it.id}" title="關聯:勾選「須等其完成的前驅任務」">${(it.deps&&it.deps.length)?it.deps.length+' ⤹':'⤹'}</button>
+        <input type="number" class="ed-f ed-equip" data-f="equip" value="${it.equip||0}" min="0" step="1" title="Machine count" placeholder="Mch">
+        <button class="ed-f ed-deps${(it.deps&&it.deps.length)?' has-dep':''}" data-deps="${it.id}" title="Deps: check the preceding tasks this must wait for">${(it.deps&&it.deps.length)?it.deps.length+' ⤹':'⤹'}</button>
         <select class="ed-f ed-status" data-f="status">
           ${['todo','doing','block','done'].map(s=>`<option value="${s}" ${it.status===s?'selected':''}>${STATUS_META[s].label}</option>`).join('')}
         </select>
-        <button class="task-del" data-del="${it.id}" title="刪除項目">×</button>
+        <button class="task-del" data-del="${it.id}" title="Delete item">×</button>
       </div>`).join('');
 
     $('#item-list').innerHTML = stage.items.length
       ? rows
-      : '<div class="rt-empty">此階段還沒有測試項目,點「＋ 新增項目」。</div>';
+      : '<div class="rt-empty">No test items yet — click ＋ Add Item.</div>';
 
     // inline editing
     $('#item-list').oninput = e => {
@@ -336,7 +336,7 @@
       saveData(); renderPlanner();
     });
     $$('#item-list .task-del').forEach(el => el.onclick = () => {
-      if (!confirm('刪除這個測試項目?')) return;
+      if (!confirm('Delete this test item?')) return;
       stage.items = stage.items.filter(x=>x.id!==el.dataset.del);
       activeStage = stage.id;
       saveData(); renderPlanner();
@@ -363,18 +363,18 @@
     const pop = document.createElement('div');
     pop.className = 'deps-pop';
     pop.innerHTML = `
-      <div class="deps-pop-h">前驅任務(須先完成)</div>
+      <div class="deps-pop-h">Predecessors (must finish first)</div>
       ${groups.length ? groups.map(g => `
-        <div class="deps-group-h">${esc(g.stage.name)}${g.stage===stage?' (本階段)':''}</div>
+        <div class="deps-group-h">${esc(g.stage.name)}${g.stage===stage?' (current)':''}</div>
         ${g.items.map(x => `
           <label class="deps-opt">
             <input type="checkbox" data-depid="${x.id}" ${it.deps.includes(x.id)?'checked':''}>
-            <span class="dopts-task">${esc(x.task)||'(未命名)'}</span>
-            <span class="dopts-range">${fmt(x.start)}→${fmt(x.end)}</span>
+            <span class="dopts-task">${esc(x.task)||'(untitled)'}</span>
+            <span class="dopts-range">${fmt(x.start)} → ${fmt(x.end)}</span>
           </label>`).join('')}
       `).join('')
-      : '<div class="deps-empty">專案沒有其他任務可關聯。</div>'}
-      <div class="deps-pop-f"><button data-dep-done>完成</button></div>`;
+      : '<div class="deps-empty">No other tasks to link.</div>'}
+      <div class="deps-pop-f"><button data-dep-done>Done</button></div>`;
     document.body.appendChild(pop);
     // position near anchor
     const r = anchor.getBoundingClientRect();
@@ -414,7 +414,7 @@
   ===================================================== */
   function renderGantt(){
     const p = findProject(activeProj) || DATA[0];
-    if (!p) { $('#gantt-card').innerHTML = '<div class="gantt-empty">先新增專案。</div>'; return; }
+    if (!p) { $('#gantt-card').innerHTML = '<div class="gantt-empty">Add a project first.</div>'; return; }
     activeProj = p.id;
     if (!activeStage || !p.stages.find(s=>s.id===activeStage)) activeStage = p.stages[0]?.id || null;
 
@@ -423,12 +423,12 @@
       <button class="stbtn ${s.id===activeStage?'active':''}" data-stage="${s.id}">
         <span class="pt-dot" style="background:${s.color}"></span>${esc(s.name)}
       </button>`).join('')
-      + (p.stages.length===0 ? '<span class="rt-empty">此專案還沒有階段</span>' : '');
+      + (p.stages.length===0 ? '<span class="rt-empty">No stages yet</span>' : '');
     $$('#gantt-stage-tabs .stbtn[data-stage]').forEach(b => b.onclick = () => { activeStage = b.dataset.stage; renderGantt(); });
 
     const stage = findStage(activeProj, activeStage);
     if (!stage || !stage.items || !stage.items.length) {
-      $('#gantt-card').innerHTML = '<div class="gantt-empty">此階段還沒有項目,到「排程規劃」新增。</div>';
+      $('#gantt-card').innerHTML = '<div class="gantt-empty">No items in this stage yet — add them in Schedule Planning.</div>';
       return;
     }
     const items = stage.items;
@@ -436,11 +436,11 @@
     // legend
     $('#gantt-legend').innerHTML = ['todo','doing','block','done'].map(s => `
       <span><span class="lg" style="background:${STATUS_META[s].color}"></span>${STATUS_META[s].label}</span>`).join('')
-      + `<span class="lg-tip">· 拖曳橫條移動 · 拖曳左右兩端調整天數</span>`;
+      + `<span class="lg-tip">· Drag a bar to move · drag either end to change its duration</span>`;
 
     // timeline span (from min start to max end, with 2-day padding)
     const allDates = items.flatMap(it => it.start && it.end ? [it.start, it.end] : []);
-    if (!allDates.length) { $('#gantt-card').innerHTML = '<div class="gantt-empty">項目沒有日期。</div>'; return; }
+    if (!allDates.length) { $('#gantt-card').innerHTML = '<div class="gantt-empty">Items have no dates.</div>'; return; }
     const minD = addDays(allDates.reduce((a,b)=>new Date(a)<new Date(b)?a:b), -2);
     const maxD = addDays(allDates.reduce((a,b)=>new Date(a)>new Date(b)?a:b), 2);
     const totalDays = Math.max(daySpan(minD, maxD), 7);
@@ -464,7 +464,7 @@
     // week gridlines + 每日日期標籤(每天必標;格太窄時自動縮小字)
     let gridCols = '';
     let dayLabels = '';
-    const dayFont = dayW >= 30 ? 10.5 : dayW >= 18 ? 9.5 : dayW >= 11 ? 8 : 7;
+    const dayFont = dayW >= 30 ? 11.5 : dayW >= 18 ? 10.5 : dayW >= 11 ? 9 : 8;
     const dayStyle = `font-size:${dayFont}px`;
     for (let i=0; i<=totalDays; i++){
       const d = addDays(minD, i);
@@ -494,7 +494,7 @@
     let rows = '';
     // 摘要列
     rows += `<div class="gantt-row g-group">
-      <div class="gantt-label-cell"><b>${esc(p.name)} · ${esc(stage.name)}</b><span class="g-range-info">${totalDays} 天</span></div>
+      <div class="gantt-label-cell"><b>${esc(p.name)} · ${esc(stage.name)}</b><span class="g-range-info">${totalDays} days</span></div>
       <div class="gantt-timeline-cell">
         ${gridCols}
         <div class="g-range" style="left:0;width:${gridW}px"></div>
@@ -504,7 +504,7 @@
     groups.forEach(g => {
       const gItems = items.filter(it => (it.group||'') === g);
       if (!gItems.length) return;
-      const gName = g || '未分組';
+      const gName = g || 'Ungrouped';
       rows += `<div class="gantt-row g-sub">
         <div class="gantt-label-cell g-sub-label">${esc(gName)}</div>
         <div class="gantt-timeline-cell">${gridCols}</div>
@@ -517,7 +517,7 @@
         rows += `<div class="gantt-row" data-item="${it.id}">
           <div class="gantt-label-cell">
             <span class="pb-dot" style="background:${color}"></span>
-            <span class="g-label-text" title="${esc(it.task)}">${esc(it.task)||'項目'}</span>
+            <span class="g-label-text" title="${esc(it.task)}">${esc(it.task)||'Item'}</span>
             <span class="g-label-date">${fmt(it.start)}–${fmt(it.end)}</span>
           </div>
           <div class="gantt-timeline-cell">
@@ -537,10 +537,10 @@
       <div class="gantt" id="gantt-scroll">
         <div class="gantt-inner" id="gantt-inner">
           <div class="gantt-head">
-            <div class="gantt-labels"><span class="g-hint">${esc(stage.name)} 項目</span></div>
-            <div class="gantt-timeline" style="height:${HEADH+20}px;position:relative">
-              <div class="g-months" style="width:${gridW}px;bottom:20px;top:0">${monthHeader}</div>
-              <div class="g-days" style="bottom:0;height:20px;width:${gridW}px">${dayLabels}</div>
+            <div class="gantt-labels"><span class="g-hint">${esc(stage.name)} · items</span></div>
+            <div class="gantt-timeline" style="height:${HEADH+28}px;position:relative">
+              <div class="g-months" style="width:${gridW}px;bottom:28px;top:0">${monthHeader}</div>
+              <div class="g-days" style="bottom:0;height:28px;width:${gridW}px">${dayLabels}</div>
             </div>
           </div>
           <div class="gantt-body" style="position:relative">
@@ -634,7 +634,7 @@
           const shift = Math.round((left-origLeft)/dayW);
           it.start = addDays(origStart, shift);
           it.end = addDays(origEnd, shift);
-          tip.textContent = `${esc(it.task)}: ${fmt(it.start)} → ${fmt(it.end)}（移動 ${shift} 天）`;
+          tip.textContent = `${esc(it.task)}: ${fmt(it.start)} → ${fmt(it.end)} (moved ${shift} day${shift===1?'':'s'})`;
         } else if (mode==='r') {
           const w = Math.max(minW, origW + dx);
           setBar(bar, origLeft, w);
@@ -693,7 +693,7 @@
     stage.items.forEach(it => { if (it.group && !groupColors[it.group]) groupColors[it.group] = palette[Object.keys(groupColors).length % palette.length]; });
     $('#wf-legend').innerHTML = Object.entries(groupColors).map(([g,c]) => `
       <span><span class="lg" style="background:${c}"></span>${esc(g)}</span>`).join('')
-      + `<span style="color:#ffb224;font-weight:600">📊 合計</span>`;
+      + `<span style="color:#ffb224;font-weight:600">📊 Total</span>`;
 
     // waterfall 資料: 每個 item 的 equip + 末端合計
     const data = stage.items.filter(it => (it.equip||0) > 0).map(it => ({
@@ -701,10 +701,10 @@
       value: it.equip,
       color: groupColors[it.group] || '#5d6b7e',
     }));
-    data.push({ label: '合計', isTotal: true, color: '#ffb224' });
+    data.push({ label: 'Total', isTotal: true, color: '#ffb224' });
 
     if (data.length === 1) {
-      $('#wf-svg').innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-faint)">這個階段還沒有機台配置。回到「排程規劃」填寫「機台」欄。</div>';
+      $('#wf-svg').innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-faint)">No machine allocations yet. Back in Planning, fill in the Machines column.</div>';
       $('#wf-legend').innerHTML = '';
     } else {
       Charts.waterfall($('#wf-svg'), data, { orientation: wfOrient, theme });
@@ -718,8 +718,8 @@
     stage.items.forEach(it => { if (it.group) byGroup[it.group] = (byGroup[it.group]||0) + (it.equip||0); });
     $('#wf-summary').innerHTML = `
       <div class="budget-sum">
-        ${Object.entries(byGroup).map(([g,v]) => `<div class="bs-row"><span>${esc(g)}</span><b>${v} 台</b></div>`).join('') || '<div class="bs-row"><span>未分群組</span><b>0 台</b></div>'}
-        <div class="bs-row total"><span>合計機台</span><b>${total} 台</b></div>
+        ${Object.entries(byGroup).map(([g,v]) => `<div class="bs-row"><span>${esc(g)}</span><b>${v} m</b></div>`).join('') || '<div class="bs-row"><span>Ungrouped</span><b>0</b></div>'}
+        <div class="bs-row total"><span>Total machines</span><b>${total}</b></div>
       </div>`;
   }
 
@@ -727,18 +727,18 @@
 
   // 新增專案
   function addProject(){
-    const nm = prompt('新專案名稱(如 neutrino):', 'neutrino');
+    const nm = prompt('Project name (e.g. neutrino): ', 'neutrino');
     if (nm === null) return;
     const colors = ['#ffb224','#60a5fa','#f472b6','#34d399','#a78bfa','#f87171'];
     const id = uid('p');
-    DATA.push({ id, name: nm.trim()||'新專案', color: colors[DATA.length%colors.length], stages: [] });
+    DATA.push({ id, name: nm.trim()||'New Project', color: colors[DATA.length%colors.length], stages: [] });
     saveData(); activeProj = id; activeStage = null; go('planner');
   }
   $('#btn-add').onclick = addProject;
 
   // 還原匯入資料
   $('#btn-reset').onclick = () => {
-    if (confirm('還原成 Excel 匯入的原始資料?(會清除目前所有編輯)')) {
+    if (confirm('Restore the original data from Excel? This will clear all your edits.')) {
       DATA = defaultData();
       saveData(); activeProj = DATA[0]?.id||null; activeStage = null;
       render(currentView);

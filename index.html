@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>ProjectOS — 專案管理工作台</title>
+<title>ProjectOS — Project Manager Workspace</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
@@ -21,30 +21,30 @@
     </div>
 
     <div class="workspace">
-      <span class="ws-label">工作區</span>
+      <span class="ws-label">Workspace</span>
       <button class="ws-btn">
         <img class="ws-avatar" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'><rect width='40' height='40' rx='10' fill='%23ffb224'/><text x='20' y='27' font-size='18' font-family='sans-serif' font-weight='700' text-anchor='middle' fill='%230f1115'>A</text></svg>" alt="" />
-        <span class="ws-name">Alan 的團隊</span>
+        <span class="ws-name">Alan&#39;s Team</span>
         <span class="ws-caret">⌄</span>
       </button>
     </div>
 
     <nav class="nav">
-      <div class="nav-section">工作台</div>
+      <div class="nav-section">Workbench</div>
       <button class="nav-item active" data-view="dashboard">
-        <span class="nav-ico">▤</span> 總覽
+        <span class="nav-ico">▤</span> Dashboard
       </button>
       <button class="nav-item" data-view="planner">
-        <span class="nav-ico">▦</span> 排程規劃
+        <span class="nav-ico">▦</span> Planning
       </button>
       <button class="nav-item" data-view="gantt">
-        <span class="nav-ico">⤾</span> 甘特圖
+        <span class="nav-ico">⤾</span> Gantt
       </button>
       <button class="nav-item" data-view="waterfall">
-        <span class="nav-ico">≋</span> 機台瀑布
+        <span class="nav-ico">≋</span> Machines
       </button>
-      <div class="nav-section nav-section-spaced">測試進度</div>
-      <button class="nav-item"><span class="nav-ico">◉</span> 狀態
+      <div class="nav-section nav-section-spaced">Testing</div>
+      <button class="nav-item"><span class="nav-ico">◉</span> Status
         <span class="nav-badge" id="nav-stage-count">0</span></button>
     </nav>
 
@@ -53,7 +53,7 @@
         <div class="user-avatar">AL</div>
         <div>
           <div class="user-name">Alan</div>
-          <div class="user-role">專案經理</div>
+          <div class="user-role">PM</div>
         </div>
       </div>
     </div>
@@ -64,13 +64,13 @@
     <header class="topbar">
       <button class="hamburger" id="hamburger">≡</button>
       <div class="crumb">
-        <span class="crumb-muted">工作區 /</span>
-        <span id="view-title">專案總覽</span>
+        <span class="crumb-muted">Workspace /</span>
+        <span id="view-title">Dashboard</span>
       </div>
       <div class="top-actions">
-        <button class="btn btn-ghost" id="btn-reset">↻ 還原匯入資料</button>
-        <button class="btn btn-primary" id="btn-add">＋ 新增專案</button>
-        <button id="theme-toggle" title="切換黑白主題">🌙</button>
+        <button class="btn btn-ghost" id="btn-reset">↻ Restore Import</button>
+        <button class="btn btn-primary" id="btn-add">＋ New Project</button>
+        <button id="theme-toggle" title="Toggle dark / light theme">🌙</button>
       </div>
     </header>
 
@@ -79,8 +79,8 @@
       <section id="view-dashboard" class="view active">
         <div class="hero">
           <div>
-            <h1 class="page-title" id="dash-title">早安, Alan 👋</h1>
-            <p class="page-sub" id="dash-sub">管理你的測試時程。</p>
+            <h1 class="page-title" id="dash-title">Hi, Alan 👋</h1>
+            <p class="page-sub" id="dash-sub">Manage your test schedule.</p>
           </div>
           <div class="hero-side" id="today-line"></div>
         </div>
@@ -89,14 +89,14 @@
         <div class="dash-row">
           <div class="card card-grow">
             <div class="card-head">
-              <h3>專案一覽</h3>
-              <span class="card-hint">點擊進入排程</span>
+              <h3>Projects</h3>
+              <span class="card-hint">Click to open the scheduler</span>
             </div>
             <div id="proj-bars"></div>
           </div>
           <div class="card">
             <div class="card-head">
-              <h3>測試項目狀態</h3>
+              <h3>Test Item Status</h3>
             </div>
             <div id="status-ring"></div>
           </div>
@@ -104,8 +104,8 @@
 
         <div class="card">
           <div class="card-head">
-            <h3>接下來要開始的項目</h3>
-            <span class="card-hint">依開始日排序</span>
+            <h3>Up Next</h3>
+            <span class="card-hint">Sorted by start date</span>
           </div>
           <div id="recent-tasks"></div>
         </div>
@@ -115,8 +115,8 @@
       <section id="view-planner" class="view">
         <div class="hero">
           <div>
-            <h1 class="page-title">排程規劃</h1>
-            <p class="page-sub">選擇專案與階段,新增 / 編輯測試項目與時程。</p>
+            <h1 class="page-title">Schedule Planning</h1>
+            <p class="page-sub">Pick a project &amp; stage, then add / edit test items and their schedule.</p>
           </div>
         </div>
         <div class="proj-tabs" id="planner-proj-tabs"></div>
@@ -124,14 +124,14 @@
 
         <div class="card">
           <div class="card-head">
-            <h3>測試項目</h3>
-            <span class="card-hint">欄位對應 Excel:PCBA/Function · Task · Validation · Start · End · Remark</span>
-            <button class="btn btn-primary btn-small" id="btn-add-item">＋ 新增項目</button>
+            <h3>Test Items</h3>
+            <span class="card-hint">Columns map to the Excel: PCBA/Function · Task · Validation · Start · End · Remark</span>
+            <button class="btn btn-primary btn-small" id="btn-add-item">＋ Add Item</button>
           </div>
           <div class="task-table-head planner-head">
             <span></span>
             <span>PCBA / Function</span><span>Task</span><span>Validation</span>
-            <span>Start</span><span>End</span><span>Remark</span><span>機台</span><span>關聯</span><span>狀態</span><span></span>
+            <span>Start</span><span>End</span><span>Remark</span><span>Machines</span><span>Deps</span><span>Status</span><span></span>
           </div>
           <div id="item-list"></div>
         </div>
@@ -141,8 +141,8 @@
       <section id="view-gantt" class="view">
         <div class="hero">
           <div>
-            <h1 class="page-title">甘特圖</h1>
-            <p class="page-sub">拖曳橫條移動時程,拖曳兩端調整天數 — 自己規劃時間。</p>
+            <h1 class="page-title">Gantt</h1>
+            <p class="page-sub">Drag a bar to move it · drag either end to change its duration.</p>
           </div>
           <div class="legend" id="gantt-legend"></div>
         </div>
@@ -150,12 +150,12 @@
         <div class="card card-flush" id="gantt-card"></div>
       </section>
 
-      <!-- ========== WATERFALL (機台資源) ========== -->
+      <!-- ========== WATERFALL (machine resources) ========== -->
       <section id="view-waterfall" class="view">
         <div class="hero">
           <div>
-            <h1 class="page-title">機台資源瀑布</h1>
-            <p class="page-sub">各階段測試項目所需的機台數量堆疊 — 「機台」欄位可在排程規劃中編輯。</p>
+            <h1 class="page-title">Machine Stack</h1>
+            <p class="page-sub">Stacked machine counts per stage — edit via the "Machines" column in Planning.</p>
           </div>
           <div class="legend" id="wf-legend"></div>
         </div>
@@ -163,16 +163,16 @@
         <div class="dash-row">
           <div class="card card-grow">
             <div class="card-head">
-              <h3>機台分配瀑布</h3>
+              <h3>Machine Stack</h3>
               <div class="seg wf-orient" id="wf-orient">
-                <button data-orient="v" class="on"><span class="seg-ico">‖</span> 垂直</button>
-                <button data-orient="h"><span class="seg-ico">≡</span> 水平</button>
+                <button data-orient="v" class="on"><span class="seg-ico">‖</span> Vertical</button>
+                <button data-orient="h"><span class="seg-ico">≡</span> Horizontal</button>
               </div>
             </div>
             <div class="wf-container"><svg id="wf-svg"></svg></div>
           </div>
           <div class="card">
-            <div class="card-head"><h3>機台摘要</h3></div>
+            <div class="card-head"><h3>Machine Summary</h3></div>
             <div id="wf-summary"></div>
           </div>
         </div>

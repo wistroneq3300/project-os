@@ -5,10 +5,10 @@
    ============================================================ */
 
 const STATUS_META = {
-  todo:   { label: '尚未開始', color: '#5d6b7e', bg: 'rgba(93,107,126,.18)' },
-  doing:  { label: '進行中',   color: '#60a5fa', bg: 'rgba(96,165,250,.15)' },
-  block:  { label: '卡關',     color: '#f87171', bg: 'rgba(248,113,113,.14)' },
-  done:   { label: '已完成',   color: '#34d399', bg: 'rgba(52,211,153,.14)' },
+  todo:   { label: 'Not Started',  color: '#5d6b7e', bg: 'rgba(93,107,126,.18)' },
+  doing:  { label: 'In Progress',  color: '#60a5fa', bg: 'rgba(96,165,250,.15)' },
+  block:  { label: 'Blocked',      color: '#f87171', bg: 'rgba(248,113,113,.14)' },
+  done:   { label: 'Done',         color: '#34d399', bg: 'rgba(52,211,153,.14)' },
 };
 
 const PROJECTS = [
