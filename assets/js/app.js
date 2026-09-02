@@ -17,6 +17,8 @@
   let activeStage = null;   // stage id
   let theme = localStorage.getItem('pos-theme') || 'dark';
   let wfOrient = localStorage.getItem('pos-orient') || 'v';
+  let ganttAll = false;   // 甘特圖是否顯示全部階段(All 分頁)
+  let currentUnits = [];  // 目前甘特圖繪製中的 units(供註解原地更新繪製虛線)
 
   const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
   const iso = d => d instanceof Date
@@ -287,10 +289,14 @@
     saveData(); renderPlanner(); renderGantt();
   }
 
+  const PALETTE = ['#5d6b7e','#60a5fa','#34d399','#fbbf24','#f87171','#a78bfa','#fb923c','#22d3ee'];
+  const STATEMETA_FALLBACK = s => (STATUS_META[s] && STATUS_META[s].color) || '#5d6b7e';
+
   function renderItemTable(p, stage){
     if (!stage || !stage.items) return;
     const rows = stage.items.map((it, i) => `
-      <div class="item-row" data-item="${it.id}">
+      <div class="item-row" data-item="${it.id}" draggable="true">
+        <span class="row-grip" title="Drag to reorder"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 6h.01M16 6h.01M8 12h.01M16 12h.01M8 18h.01M16 18h.01"/></svg></span>
         <div class="it-check" data-check="${it.id}" title="Mark as done">✓</div>
         <input class="ed-f" data-f="group" value="${esc(it.group)}" placeholder="e.g. Baseboard">
         <input class="ed-f ed-task" data-f="task" value="${esc(it.task)}" placeholder="Task name">
@@ -299,10 +305,14 @@
         <input type="date" class="ed-date" data-f="end" value="${it.end}">
         <input class="ed-f ed-remark" data-f="remark" value="${esc(it.remark)}" placeholder="Remark">
         <input type="number" class="ed-f ed-equip" data-f="equip" value="${it.equip||0}" min="0" step="1" title="Machine count" placeholder="Mch">
+        <div class="ccol">
+          <button class="csel" data-it="${it.id}" data-open="${it.id}" style="background:${it.color || STATEMETA_FALLBACK(it.status)}"><span class="carrot">▾</span></button>
+          <div class="cpop" data-pop="${it.id}">
+            ${PALETTE.map(c => `<button class="cs2${(it.color||'').toLowerCase()===c.toLowerCase()?' on':''}" data-color="${c}" data-it="${it.id}" style="background:${c}" title="${c}"></button>`).join('')}
+            <label class="ccustom" title="Pick any colour" style="background:${it.color || STATEMETA_FALLBACK(it.status)}">＋ 自訂<input type="color" data-cust="${it.id}" value="${it.color || '#5d6b7e'}"></label>
+          </div>
+        </div>
         <button class="ed-f ed-deps${(it.deps&&it.deps.length)?' has-dep':''}" data-deps="${it.id}" title="Deps: check the preceding tasks this must wait for">${(it.deps&&it.deps.length)?it.deps.length+' ⤹':'⤹'}</button>
-        <select class="ed-f ed-status" data-f="status">
-          ${['todo','doing','block','done'].map(s=>`<option value="${s}" ${it.status===s?'selected':''}>${STATUS_META[s].label}</option>`).join('')}
-        </select>
         <button class="task-del" data-del="${it.id}" title="Delete item">×</button>
       </div>`).join('');
 
@@ -322,6 +332,7 @@
       else if (f==='task') it.task = v;
       else if (f==='validation') it.validation = v;
       else if (f==='remark') it.remark = v;
+      else if (f==='color') it.color = v || '#5d6b7e';
       else if (f==='status') it.status = v;
       else if (f==='equip') it.equip = Math.max(0, parseInt(v)||0);
       else if (f==='start') { if (v && new Date(v) <= new Date(it.end)) it.start = v; }
@@ -341,11 +352,75 @@
       activeStage = stage.id;
       saveData(); renderPlanner();
     });
+    // 顏色下拉:點色鈕展開面板
+    $$('#item-list .csel').forEach(btn => btn.onclick = e => {
+      e.stopPropagation();
+      const id = btn.dataset.open;
+      closeColorPops();
+      const pop = document.querySelector(`.cpop[data-pop="${id}"]`);
+      if (pop) pop.classList.add('open');
+    });
+    // 選預設色
+    $$('#item-list .cs2').forEach(sw => sw.onclick = () => {
+      const it = stage.items.find(x => x.id === sw.dataset.it);
+      if (!it) return;
+      it.color = sw.dataset.color;
+      saveData(); renderItemTable(p, stage); renderGantt();
+    });
+    // 自訂任意色
+    $$('#item-list input[data-cust]').forEach(inp => inp.oninput = () => {
+      const it = stage.items.find(x => x.id === inp.dataset.cust);
+      if (!it) return;
+      it.color = inp.value;
+      saveData(); renderItemTable(p, stage); renderGantt();
+    });
     // 關聯(deps)popover
     $$('#item-list .ed-deps').forEach(btn => btn.onclick = e => {
       e.stopPropagation();
       openDepsPicker(p, stage, btn);
     });
+    makeRowsDraggable(p, stage);
+  }
+
+  /* 任務行拖曳排序(用 clientY 找落點,因行是縱排) */
+  function makeRowsDraggable(p, stage){
+    const list = $('#item-list');
+    let dragged = null;
+    list.querySelectorAll('.item-row').forEach(row => {
+      row.addEventListener('dragstart', e => {
+        if (!e.target.closest('.row-grip')) { e.preventDefault(); return; }
+        dragged = row;
+        row.classList.add('dragging');
+        try { e.dataTransfer.setData('text/plain', row.dataset.item); } catch(err){}
+      });
+      row.addEventListener('dragend', () => {
+        row.classList.remove('dragging');
+        dragged = null;
+        const order = Array.from(list.querySelectorAll('.item-row')).map(r => r.dataset.item);
+        if (order.length === stage.items.length && order.length) {
+          stage.items.sort((a,b) => order.indexOf(a.id) - order.indexOf(b.id));
+          saveData(); renderItemTable(p, stage); renderGantt(); if (renderWaterfall) renderWaterfall();
+        }
+      });
+    });
+    list.ondragover = e => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      if (!dragged) return;
+      const after = getDragAfterY(list, e.clientY);
+      if (after == null) list.appendChild(dragged);
+      else list.insertBefore(dragged, after);
+    };
+    list.ondrop = e => { e.preventDefault(); };
+  }
+  function getDragAfterY(container, y){
+    const els = Array.from(container.querySelectorAll('.item-row:not(.dragging)'));
+    return els.reduce((closest, child) => {
+      const box = child.getBoundingClientRect();
+      const offset = y - box.top - box.height/2;
+      if (offset < 0 && offset > closest.offset) return { offset, element: child };
+      return closest;
+    }, { offset: -Infinity, element: null }).element;
   }
 
   /* deps 勾選 popover:選「這個任務須等其完成的前驅任務」(含專案所有階段) */
@@ -418,35 +493,44 @@
     activeProj = p.id;
     if (!activeStage || !p.stages.find(s=>s.id===activeStage)) activeStage = p.stages[0]?.id || null;
 
-    // stage tabs
-    $('#gantt-stage-tabs').innerHTML = p.stages.map(s => `
-      <button class="stbtn ${s.id===activeStage?'active':''}" data-stage="${s.id}">
-        <span class="pt-dot" style="background:${s.color}"></span>${esc(s.name)}
-      </button>`).join('')
+    // ---- 分頁:All + 各 stage ----
+    const allLabel = '<span class="pt-dot" style="background:linear-gradient(135deg,#ffb224,#60a5fa);width:10px;height:10px"></span>All';
+    $('#gantt-stage-tabs').innerHTML =
+      `<button class="stbtn ${ganttAll?'active':''}" data-all="1">${allLabel}</button>`
+      + p.stages.map(s => `
+        <button class="stbtn ${(!ganttAll && s.id===activeStage)?'active':''}" data-stage="${s.id}">
+          <span class="pt-dot" style="background:${s.color}"></span>${esc(s.name)}
+        </button>`).join('')
       + (p.stages.length===0 ? '<span class="rt-empty">No stages yet</span>' : '');
-    $$('#gantt-stage-tabs .stbtn[data-stage]').forEach(b => b.onclick = () => { activeStage = b.dataset.stage; renderGantt(); });
+    $$('#gantt-stage-tabs .stbtn[data-stage]').forEach(b => b.onclick = () => { ganttAll = false; activeStage = b.dataset.stage; renderGantt(); });
+    $$('#gantt-stage-tabs .stbtn[data-all]').forEach(b => b.onclick = () => { ganttAll = true; renderGantt(); });
 
-    const stage = findStage(activeProj, activeStage);
-    if (!stage || !stage.items || !stage.items.length) {
-      $('#gantt-card').innerHTML = '<div class="gantt-empty">No items in this stage yet — add them in Schedule Planning.</div>';
+    // ---- 決定要畫的 stage 清單與 items ----
+    // 每筆帶來源 stage,方便分群與顯示
+    const units = [];   // { stage, it }
+    if (ganttAll) {
+      p.stages.forEach(s => (s.items||[]).forEach(it => units.push({ stage: s, it })));
+    } else {
+      const stage = findStage(activeProj, activeStage);
+      if (stage && stage.items) stage.items.forEach(it => units.push({ stage, it }));
+    }
+    if (!units.length) {
+      $('#gantt-card').innerHTML = '<div class="gantt-empty">No items yet — add them in Schedule Planning.</div>';
       return;
     }
-    const items = stage.items;
+    const items = units;
 
-    // legend
-    $('#gantt-legend').innerHTML = ['todo','doing','block','done'].map(s => `
-      <span><span class="lg" style="background:${STATUS_META[s].color}"></span>${STATUS_META[s].label}</span>`).join('')
-      + `<span class="lg-tip">· Drag a bar to move · drag either end to change its duration</span>`;
+    // 圖例已整個移除;bar 與虛線註解的「新增」事件由 paintDeps 產生的元素綁定(見 paintDeps)
 
     // timeline span (from min start to max end, with 2-day padding)
-    const allDates = items.flatMap(it => it.start && it.end ? [it.start, it.end] : []);
+    const allDates = items.flatMap(u => u.it.start && u.it.end ? [u.it.start, u.it.end] : []);
     if (!allDates.length) { $('#gantt-card').innerHTML = '<div class="gantt-empty">Items have no dates.</div>'; return; }
     const minD = addDays(allDates.reduce((a,b)=>new Date(a)<new Date(b)?a:b), -2);
     const maxD = addDays(allDates.reduce((a,b)=>new Date(a)>new Date(b)?a:b), 2);
     const totalDays = Math.max(daySpan(minD, maxD), 7);
     // 軸放大模式:grid 寬 = 卡片可用寬(撐滿),dayW 按比例縮放 → bar 寬度精確對應天數
     const cardW = $('#gantt-card').clientWidth;
-    const gridW = Math.max(cardW - 250 - 48, 600);
+    const gridW = Math.max(cardW - 340 - 48, 600);
     const dayW = gridW / totalDays;
 
     // month header
@@ -457,11 +541,17 @@
       let next = new Date(m); next.setMonth(next.getMonth()+1);
       const s0 = Math.max(0, daySpan(minD, iso(m)));
       const s1 = Math.max(0, daySpan(minD, iso(next)));
-      monthHeader += `<div class="g-month" style="left:${s0*dayW}px;width:${(s1-s0)*dayW}px">${m.getFullYear()} / ${m.getMonth()+1}</div>`;
+      const monthW = (s1 - s0) * dayW;
+      // 月份太窄、單行「2026 / 8」放不下(會超過右界)時 → 改兩行(上「2026 /」下「8」)
+      if (monthW < 62) {
+        monthHeader += `<div class="g-month g-month-2l" style="left:${s0*dayW}px;width:${Math.max(monthW, 30)}px"><span>${m.getFullYear()}&nbsp;/</span><span>${m.getMonth()+1}</span></div>`;
+      } else {
+        monthHeader += `<div class="g-month" style="left:${s0*dayW}px;width:${monthW}px"><span>${m.getFullYear()} / ${m.getMonth()+1}</span></div>`;
+      }
       m = next;
     }
 
-    // week gridlines + 每日日期標籤(每天必標;格太窄時自動縮小字)
+    // week gridlines + 每日日期標籤
     let gridCols = '';
     let dayLabels = '';
     const dayFont = dayW >= 30 ? 11.5 : dayW >= 18 ? 10.5 : dayW >= 11 ? 9 : 8;
@@ -480,64 +570,138 @@
     }
 
     const xFor = date => Math.max(0, Math.min(daySpan(minD, date)*dayW, gridW));
-    // 寬度精確對應天數;至少 14px 避免零寬度不可見
-    const wFor = it => Math.max(daySpan(it.start, it.end)*dayW, 14);
+    const wFor = u => Math.max(daySpan(u.it.start, u.it.end)*dayW, 14);
 
-    const LABELW = 250;
+    const LABELW = 340;
     const ROWH = 38, HEADH = 46, PAD = 6, BARH = 22;
 
-    // group rows (unique groups, in order) — 先畫群組區隔
-    const groups = [];
-    items.forEach(it => { if (it.group && !groups.includes(it.group)) groups.push(it.group); });
-    if (!groups.includes('')) groups.push('');  // 未分組放最後
+    // ---- 畫列。All 模式:先按階段分大群(每個階段一組),再在組內依 group 分小群。
+    // 單一階段模式:維持原樣,只依 group 分群。 ----
+    const stageNames = [];
+    items.forEach(u => { if (u.stage && !stageNames.includes(u.stage.id)) stageNames.push(u.stage.id); });
+
+    const groupsOfStage = stId => {
+      const arr = [];
+      items.forEach(u => {
+        if (u.stage.id !== stId) return;
+        const g = u.it.group || '';
+        if (!arr.includes(g)) arr.push(g);
+      });
+      if (!arr.includes('')) arr.push('');
+      return arr;
+    };
+
+    const gForItem = (u, stId, groups) => {
+      // 依該 stage 的 groups 順序回傳 group 名
+      return u.it.group || '';
+    };
 
     let rows = '';
-    // 摘要列
-    rows += `<div class="gantt-row g-group">
-      <div class="gantt-label-cell"><b>${esc(p.name)} · ${esc(stage.name)}</b><span class="g-range-info">${totalDays} days</span></div>
-      <div class="gantt-timeline-cell">
-        ${gridCols}
-        <div class="g-range" style="left:0;width:${gridW}px"></div>
-      </div></div>`;
-
-    // 群組標題列 + 項目列
-    groups.forEach(g => {
-      const gItems = items.filter(it => (it.group||'') === g);
-      if (!gItems.length) return;
-      const gName = g || 'Ungrouped';
-      rows += `<div class="gantt-row g-sub">
-        <div class="gantt-label-cell g-sub-label">${esc(gName)}</div>
-        <div class="gantt-timeline-cell">${gridCols}</div>
+    if (ganttAll) {
+      // 摘要列
+      rows += `<div class="gantt-row g-group">
+        <div class="gantt-label-cell"><b>${esc(p.name)} · All</b><span class="g-range-info">${totalDays} days</span></div>
+        <div class="gantt-timeline-cell">${gridCols}<div class="g-range" style="left:0;width:${gridW}px"></div></div>
       </div>`;
-      gItems.forEach(it => {
-        if (!it.start || !it.end) return;
-        const left = xFor(it.start);
-        const w = wFor(it);
-        const color = STATUS_META[it.status]?.color || '#5d6b7e';
-        rows += `<div class="gantt-row" data-item="${it.id}">
-          <div class="gantt-label-cell">
-            <span class="pb-dot" style="background:${color}"></span>
-            <span class="g-label-text" title="${esc(it.task)}">${esc(it.task)||'Item'}</span>
-            <span class="g-label-date">${fmt(it.start)}–${fmt(it.end)}</span>
+      stageNames.forEach(stId => {
+        const s = findStage(activeProj, stId);
+        if (!s) return;
+        const groups = groupsOfStage(stId);
+        rows += `<div class="gantt-row g-mstage">
+          <div class="gantt-label-cell" style="color:${s.color};font-weight:700">
+            <span class="pt-dot" style="background:${s.color}"></span>${esc(s.name)}
           </div>
-          <div class="gantt-timeline-cell">
-            ${gridCols}
-            <div class="g-bar ${it.status}" data-item="${it.id}"
-                 style="left:${left}px;width:${w}px;background:${color}"
-                 title="${esc(it.task)} · ${fmt(it.start)} → ${fmt(it.end)}">
-              <span class="g-resize g-resize-l" data-r="l"></span>
-              <span class="g-resize g-resize-r" data-r="r"></span>
-            </div>
-          </div>
+          <div class="gantt-timeline-cell">${gridCols}</div>
         </div>`;
+        groups.forEach(g => {
+          const gItems = items.filter(u => u.stage.id===stId && (u.it.group||'')===g);
+          if (!gItems.length) return;
+          const gName = g || 'Ungrouped';
+          rows += `<div class="gantt-row g-sub">
+            <div class="gantt-label-cell g-sub-label">${esc(gName)}</div>
+            <div class="gantt-timeline-cell">${gridCols}</div>
+          </div>`;
+          gItems.forEach(u => {
+            const it = u.it;
+            if (!it.start || !it.end) return;
+            const left = xFor(it.start);
+            const w = Math.max(daySpan(it.start, it.end)*dayW, 14);
+            const color = it.color || (STATUS_META[it.status]?.color || '#5d6b7e');
+            rows += `<div class="gantt-row" data-item="${it.id}" data-stage="${u.stage.id}">
+              <div class="gantt-label-cell">
+                <div class="g-label-main">
+                  <span class="pb-dot" style="background:${color}"></span>
+                  <span class="g-label-text" title="${esc(it.task)}">${esc(it.task)||'Item'}</span>
+                  <span class="g-label-date">${fmt(it.start)}–${fmt(it.end)}</span>
+                </div>
+                ${it.remark ? `<div class="g-label-note" title="${esc(it.remark)}"><span class="pn-ico">📝</span><span class="pn-txt">${esc(it.remark)}</span></div>` : ''}
+              </div>
+              <div class="gantt-timeline-cell">
+                ${gridCols}
+                <div class="g-bar ${it.status}" data-item="${it.id}"
+                     style="left:${left}px;width:${w}px;background:${color}"
+                     title="${esc(it.task)} · ${fmt(it.start)} → ${fmt(it.end)}">
+                  <span class="g-resize g-resize-l" data-r="l"></span>
+                  <span class="g-resize g-resize-r" data-r="r"></span>
+                </div>
+                <span class="g-bar-addannot" data-it="${it.id}" style="left:${left + Math.max(w,26) - 16}px" title="Add/edit annotation on this bar">＋</span>
+                ${it.notes ? `<div class="g-bar-annot" data-it="${it.id}" style="left:${left + w/2}px"><span class="gba">📌&nbsp;${esc(it.notes)}</span></div>` : ''}
+              </div>
+            </div>`;
+          });
+        });
       });
-    });
+    } else {
+      const st = units[0].stage;
+      const groups = groupsOfStage(st.id);
+      rows += `<div class="gantt-row g-group">
+        <div class="gantt-label-cell"><b>${esc(p.name)} · ${esc(st.name)}</b><span class="g-range-info">${totalDays} days</span></div>
+        <div class="gantt-timeline-cell">${gridCols}<div class="g-range" style="left:0;width:${gridW}px"></div></div>
+      </div>`;
+      groups.forEach(g => {
+        const gItems = items.filter(u => (u.it.group||'')===g);
+        if (!gItems.length) return;
+        const gName = g || 'Ungrouped';
+        rows += `<div class="gantt-row g-sub">
+          <div class="gantt-label-cell g-sub-label">${esc(gName)}</div>
+          <div class="gantt-timeline-cell">${gridCols}</div>
+        </div>`;
+        gItems.forEach(u => {
+          const it = u.it;
+          if (!it.start || !it.end) return;
+          const left = xFor(it.start);
+          const w = wFor(u);
+          const color = it.color || (STATUS_META[it.status]?.color || '#5d6b7e');
+          rows += `<div class="gantt-row" data-item="${it.id}">
+            <div class="gantt-label-cell">
+              <div class="g-label-main">
+                <span class="pb-dot" style="background:${color}"></span>
+                <span class="g-label-text" title="${esc(it.task)}">${esc(it.task)||'Item'}</span>
+                <span class="g-label-date">${fmt(it.start)}–${fmt(it.end)}</span>
+              </div>
+              ${it.remark ? `<div class="g-label-note" title="${esc(it.remark)}"><span class="pn-ico">📝</span><span class="pn-txt">${esc(it.remark)}</span></div>` : ''}
+            </div>
+            <div class="gantt-timeline-cell">
+              ${gridCols}
+              <div class="g-bar ${it.status}" data-item="${it.id}"
+                   style="left:${left}px;width:${w}px;background:${color}"
+                   title="${esc(it.task)} · ${fmt(it.start)} → ${fmt(it.end)}">
+                <span class="g-resize g-resize-l" data-r="l"></span>
+                <span class="g-resize g-resize-r" data-r="r"></span>
+              </div>
+              <span class="g-bar-addannot" data-it="${it.id}" style="left:${left + Math.max(w,26) - 16}px" title="Add/edit annotation on this bar">＋</span>
+              ${it.notes ? `<div class="g-bar-annot" data-it="${it.id}" style="left:${left + w/2}px"><span class="gba">📌&nbsp;${esc(it.notes)}</span></div>` : ''}
+            </div>
+          </div>`;
+        });
+      });
+    }
 
     $('#gantt-card').innerHTML = `
       <div class="gantt" id="gantt-scroll">
         <div class="gantt-inner" id="gantt-inner">
           <div class="gantt-head">
-            <div class="gantt-labels"><span class="g-hint">${esc(stage.name)} · items</span></div>
+            <div class="gantt-labels"><span class="g-hint">${ganttAll?'All stages':'items'}</span></div>
             <div class="gantt-timeline" style="height:${HEADH+28}px;position:relative">
               <div class="g-months" style="width:${gridW}px;bottom:28px;top:0">${monthHeader}</div>
               <div class="g-days" style="bottom:0;height:28px;width:${gridW}px">${dayLabels}</div>
@@ -551,43 +715,116 @@
         </div>
       </div>`;
 
-    wireGanttDrag(p, stage, gridW, dayW, xFor, minD);
-    // 用實際 DOM 位置畫 deps 箭頭(在 paintDeps 內)
-    requestAnimationFrame(() => paintDeps(stage));
+    wireGanttDrag(p, ganttAll?null:units[0].stage, gridW, dayW, xFor, minD);
+    // bar 註解:「＋」新增/編輯,點註解文字也編輯
+    const barNoteClick = a => {
+      a.addEventListener('click', e => {
+        e.stopPropagation();
+        const id = a.dataset.it;
+        const u = items.find(x => x.it.id === id);
+        if (u) addBarNote(u.it);
+      });
+    };
+    $$('#gantt-card .g-bar-addannot').forEach(barNoteClick);
+    $$('#gantt-card .g-bar-annot').forEach(barNoteClick);
+    currentUnits = items;
+    requestAnimationFrame(() => paintDeps(items));
   }
 
-  /* 畫 deps 箭頭:前驅任務右端 → 任務左端,依 getBoundingClientRect 計算 */
-  function paintDeps(stage){
+  // 新增/編輯/刪除「bar 註解」與「虛線註解」(寫入 item.notes / depNotes)
+  function promptNote(text, def){
+    const v = prompt(text, def || '');
+    if (v === null) return null;   // 使用者按「取消」
+    return v.trim();               // 可能是空字串(清空 → 移除註解)
+  }
+  function addBarNote(it){
+    const t = promptNote('Annotation on this bar (text or empty to remove):', it.notes || '');
+    if (t === null) return;
+    if (t === '') { delete it.notes; }
+    else { it.notes = t; }
+    saveData();
+    // 原地更新,不重繪整個甘特圖
+    const cell = document.querySelector(`.g-bar[data-item="${esc(it.id)}"]`)?.closest('.gantt-timeline-cell');
+    const bar = cell && cell.querySelector('.g-bar');
+    if (cell) {
+      let ann = cell.querySelector('.g-bar-annot');
+      if (it.notes) {
+        if (!ann) {
+          ann = document.createElement('div');
+          ann.className = 'g-bar-annot';
+          ann.dataset.it = it.id;
+          const barR = bar ? bar.getBoundingClientRect() : null;
+          const cellR = cell.getBoundingClientRect();
+          ann.style.left = (barR ? (barR.left - cellR.left + barR.width/2) : 0) + 'px';
+          cell.appendChild(ann);
+          ann.addEventListener('click', e => { e.stopPropagation(); addBarNote(it); });
+        }
+        ann.innerHTML = `<span class="gba">📌&nbsp;${esc(it.notes)}</span>`;
+      } else if (ann) {
+        ann.remove();
+      }
+    }
+  }
+  function addDepNote(it, depId){
+    if (!it.depNotes || typeof it.depNotes !== 'object') it.depNotes = {};
+    const cur = it.depNotes[depId] || '';
+    const t = promptNote('Annotation on this dependency arrow (text or empty to remove):', cur);
+    if (t === null) return;
+    if (t === '') delete it.depNotes[depId]; else it.depNotes[depId] = t;
+    saveData();
+    // 原地更新:重新繪製虛線與虛線註解(不重整整個甘特圖)
     const svg = document.getElementById('gantt-deps');
-    if (!svg || !stage || !stage.items) return;
+    if (svg) paintDeps(currentUnits);
+  }
+
+  /* 畫 deps 虛線+箭頭:自己的尾巴(右端) → 被依賴任務的頭(左端)
+     「自己」= 有 deps 的任務;「被依賴任務」= deps 裡列的前驅。
+     箭頭指進「被依賴任務」的頭(左端)。 */
+  // units:  [{ stage, it }, ...] 或單一 stage(取其 .items 每項都當 it 用)
+  function paintDeps(units){
+    const svg = document.getElementById('gantt-deps');
+    if (!svg) return;
     const body = svg.parentNode; // .gantt-body
     const bodyR = body.getBoundingClientRect();
-    const get = id => stage.items.find(it => it.id === id);
     const bars = {};
     body.querySelectorAll('.g-bar,.g-milestone').forEach(el => bars[el.dataset.item] = el);
 
-    let shapes = '';
-    stage.items.forEach(it => {
+    // 正規化成陣列
+    let list;
+    if (Array.isArray(units)) list = units;
+    else if (units && units.items) list = units.items.map(it => ({ it }));
+    else list = [];
+    if (!list.length) { svg.innerHTML = ''; return; }
+
+    let shapes = `
+      <defs><marker id="pos-dep-arrow" markerWidth="10" markerHeight="10" refX="8" refY="4" orient="auto" markerUnits="userSpaceOnUse">
+        <path d="M0,0 L8,4 L0,8 Z" style="fill:rgba(148,163,184,.95)"/>
+      </marker></defs>`;
+    list.forEach(u => {
+      const it = u.it;
       if (!it.deps || !it.deps.length) return;
-      const target = bars[it.id]; if (!target) return;
-      const tR = target.getBoundingClientRect();
-      // 目標左端(箭頭落點)
-      let ex = tR.left - bodyR.left + 4;
-      let ey = tR.top - bodyR.top + tR.height/2;
+      const self = bars[it.id]; if (!self) return;
+      const sR = self.getBoundingClientRect();
+      // 自己的尾巴(右端)= 線條起點
+      const sx = sR.right - bodyR.left - 4;
+      const sy = sR.top - bodyR.top + sR.height/2;
       it.deps.forEach(depId => {
         const dep = bars[depId]; if (!dep) return;
         const dR = dep.getBoundingClientRect();
-        // 前驅右端(箭頭起點)
-        let sx = dR.right - bodyR.left - 4;
-        let sy = dR.top - bodyR.top + dR.height/2;
-        // 避免目標在前驅左邊造成反向
-        if (sx >= ex - 6) { sx = dR.right - bodyR.left; }
-        const d = `M ${sx} ${sy} C ${sx + (ex-sx)*0.45} ${sy}, ${sx + (ex-sx)*0.55} ${ey}, ${ex-7} ${ey}`;
-        shapes += `<path d="${d}"/>`;
-        // 箭頭
-        shapes += `<polygon points="${ex-7},${ey-4} ${ex-7},${ey+4} ${ex-1},${ey}"/>`;
+        // 被依賴任務的頭(左端)= 箭頭落點
+        const ex = dR.left - bodyR.left + 1;
+        const ey = dR.top - bodyR.top + dR.height/2;
+        const mx = (sx + ex)/2;
+        const my = (sy + ey)/2 - 6;
+        const d = `M ${sx} ${sy} C ${sx + (ex-sx)*0.45} ${sy}, ${sx + (ex-sx)*0.55} ${ey}, ${ex} ${ey}`;
+        shapes += `<path class="dep-line" data-from="${esc(it.id)}" data-to="${esc(depId)}" d="${d}" marker-end="url(#pos-dep-arrow)"/>`;
         // 起點圓點
-        shapes += `<circle cx="${sx}" cy="${sy}" r="2.5" style="fill:#fff;stroke:currentColor"/>`;
+        shapes += `<circle cx="${sx}" cy="${sy}" r="2.5" style="fill:#fff;stroke:rgba(148,163,184,.95)"/>`;
+        // 虛線上的註解(若存在)
+        const dn = it.depNotes && it.depNotes[depId];
+        if (dn) {
+          shapes += `<text class="dep-note" data-from="${esc(it.id)}" data-to="${esc(depId)}" x="${mx}" y="${my}" text-anchor="middle">📌 ${esc(dn)}</text>`;
+        }
       });
     });
     svg.setAttribute('width', bodyR.width);
@@ -595,10 +832,30 @@
     svg.style.width = bodyR.width+'px';
     svg.style.height = bodyR.height+'px';
     svg.innerHTML = shapes;
+
+    // 虛線註解:點虛線 → 編輯該依賴關係的註解
+    const bindDepNote = el => {
+      el.style.cursor = 'pointer';
+      el.addEventListener('click', e => {
+        e.stopPropagation();
+        const fromId = el.dataset.from, toId = el.dataset.to;
+        const u = list.find(x => x.it.id === fromId);
+        if (u) addDepNote(u.it, toId);
+      });
+    };
+    svg.querySelectorAll('.dep-line').forEach(bindDepNote);
+    svg.querySelectorAll('.dep-note').forEach(bindDepNote);
   }
 
   function wireGanttDrag(p, stage, gridW, dayW, xFor, minD){
-    const get = id => stage.items.find(it => it.id === id);
+    // 依 item id 跨專案所有階段查詢(All 模式下也要能編輯)
+    const get = id => {
+      for (const st of p.stages) {
+        const f = st.items.find(it => it.id === id);
+        if (f) return f;
+      }
+      return null;
+    };
     const minW = Math.max(14, dayW);   // 最小 1 天 / 14px
     const setBar = (bar, left, w) => { bar.style.left = left+'px'; bar.style.width = w+'px'; };
 
@@ -750,6 +1007,12 @@
     if (!$('.sidebar').classList.contains('open')) return;
     if (!$('.sidebar').contains(e.target)) $('.sidebar').classList.remove('open');
   });
+
+  // 點面板外部 → 關閉已開啟的「顏色下拉」
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.ccol')) closeColorPops();
+  });
+  function closeColorPops(){ document.querySelectorAll('.cpop.open').forEach(p => p.classList.remove('open')); }
 
   // theme
   const themeToggle = $('#theme-toggle');
