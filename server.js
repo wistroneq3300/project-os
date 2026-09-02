@@ -38,7 +38,11 @@ function readStore(){
   } catch(e){}
   return { rev: 0, data: null };
 }
-function writeStore(data, rev){ fs.writeFileSync(DATA_FILE, JSON.stringify({ rev, data })); }
+function writeStore(data, rev){
+  // 覆寫前把現有內容備份一份,避免誤刪/誤重置時無法回復
+  try { if (fs.existsSync(DATA_FILE)) fs.copyFileSync(DATA_FILE, DATA_FILE + '.bak'); } catch(e){}
+  fs.writeFileSync(DATA_FILE, JSON.stringify({ rev, data }));
+}
 
 http.createServer((req, res) => {
   const url = new URL(req.url, 'http://x');

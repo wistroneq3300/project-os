@@ -42,7 +42,7 @@
     } catch(e){}
     return defaultData();
   }
-  function saveData(){ try { localStorage.setItem(KEY, JSON.stringify(DATA)); } catch(e){} syncToServer(); }
+  function saveData(){ try { localStorage.setItem(KEY, JSON.stringify(DATA)); localStorage.setItem(KEY+'-bak', JSON.stringify(DATA)); } catch(e){} syncToServer(); }
 
   /* ================= 多人共享同步(server.js) ================= */
   let syncRev = 0;                 // 目前看到的資料版本
