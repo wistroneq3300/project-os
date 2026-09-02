@@ -96,8 +96,8 @@
 body.g-dragging .g-bar{pointer-events:none}
 body.g-dragging{cursor:grabbing}
 
-.g-milestone{width:0;height:0;border-left:10px solid transparent;border-right:10px solid transparent;
-  border-top:16px solid var(--accent);cursor:grab;z-index:2;top:4px}
+.g-milestone{width:0;height:0;border-left:14px solid transparent;border-right:14px solid transparent;
+  border-top:20px solid var(--accent);cursor:grab;z-index:2;top:3px;margin-left:-14px}
 .g-milestone.done{border-top-color:#34d399}
 .g-milestone.doing{border-top-color:#60a5fa}
 .g-milestone.block{border-top-color:#f87171}

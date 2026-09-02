@@ -446,7 +446,7 @@
         if (!it.start || !it.end) return;
         const left = xFor(it.start);
         const w = wFor(it);
-        const isMilestone = daySpan(it.start,it.end)===0;
+        const isMilestone = daySpan(it.start,it.end) <= 1;
         const color = STATUS_META[it.status]?.color || '#5d6b7e';
         rows += `<div class="gantt-row" data-item="${it.id}">
           <div class="gantt-label-cell">
@@ -493,7 +493,7 @@
     const minW = 72;   // 與 renderGantt 的最小橫條寬一致
     const setBar = (bar, left, w) => { bar.style.left = left+'px'; bar.style.width = w+'px'; };
 
-    $$('#gantt-scroll .g-bar').forEach(bar => {
+    $$('.gantt .g-bar, .gantt .g-milestone').forEach(bar => {
       const itid = bar.dataset.item;
       let mode=null, startX, origLeft, origW, origStart, origEnd;
 
@@ -520,8 +520,8 @@
         const dx = e.clientX - startX;
         const tip = $('#gantt-tip');
         if (mode==='move') {
-          const left = Math.max(0, Math.min(origLeft + dx, gridW - origW));
-          setBar(bar, left, origW);
+          const left = Math.max(0, Math.min(origLeft + dx, gridW));
+          bar.style.left = left+'px';
           const shift = Math.round((left-origLeft)/dayW);
           it.start = addDays(origStart, shift);
           it.end = addDays(origEnd, shift);
