@@ -481,13 +481,17 @@
     let dragged = null;
     list.querySelectorAll('.item-row').forEach(row => {
       row.addEventListener('dragstart', e => {
-        if (!e.target.closest('.row-grip')) { e.preventDefault(); return; }
+        // 從可互動控件(輸入框/按鈕/色選/checkbox)開始拖 → 不觸發,以免干擾編輯或選字
+        if (e.target.closest('input,button,select,textarea,.ccol,.it-check')) { e.preventDefault(); return; }
         dragged = row;
         row.classList.add('dragging');
-        try { e.dataTransfer.setData('text/plain', row.dataset.item); } catch(err){}
+        row.style.opacity = '.45';
+        try { e.dataTransfer.setData('text/plain', row.dataset.item); e.dataTransfer.effectAllowed = 'move'; } catch(err){}
       });
       row.addEventListener('dragend', () => {
         row.classList.remove('dragging');
+        row.style.opacity = '';
+        clearInsertLine();
         dragged = null;
         const order = Array.from(list.querySelectorAll('.item-row')).map(r => r.dataset.item);
         if (order.length === stage.items.length && order.length) {
@@ -501,11 +505,24 @@
       e.dataTransfer.dropEffect = 'move';
       if (!dragged) return;
       const after = getDragAfterY(list, e.clientY);
+      drawInsertLine(after, list);
       if (after == null) list.appendChild(dragged);
       else list.insertBefore(dragged, after);
     };
-    list.ondrop = e => { e.preventDefault(); };
+    list.ondragleave = e => {
+      if (e.target === list || !list.contains(e.target)) clearInsertLine();
+    };
+    list.ondrop = e => { e.preventDefault(); clearInsertLine(); };
   }
+  /* 拖曳中的插入位置指示線(以 list 子層插入,置於目標 row 上方) */
+  function drawInsertLine(after, list){
+    clearInsertLine();
+    const line = document.createElement('div');
+    line.className = 'row-insert-line';
+    if (after) list.insertBefore(line, after);
+    else list.appendChild(line);
+  }
+  function clearInsertLine(){ document.querySelectorAll('.row-insert-line').forEach(l => l.remove()); }
   function getDragAfterY(container, y){
     const els = Array.from(container.querySelectorAll('.item-row:not(.dragging)'));
     return els.reduce((closest, child) => {

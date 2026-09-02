@@ -47,6 +47,7 @@
 .item-row:hover .row-grip{opacity:1;color:var(--text-dim)}
 .row-grip:active{cursor:grabbing}
 .item-row.dragging{opacity:.45;background:var(--panel-2);border:1px dashed var(--accent)}
+.row-insert-line{height:0;border-top:2px solid var(--accent);margin:0 14px}
 .item-row .ed-f,.item-row .ed-date,.item-row .ed-status{
   background:transparent;border:1px solid transparent;border-radius:7px;
   padding:6px 8px;font-size:13px;color:var(--text);font-family:inherit;min-width:0;transition:.15s}
